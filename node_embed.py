@@ -140,7 +140,7 @@ def main():
     parser.add_argument('-iter', help="Number of iterations. (default is {}).".format(NUM_ITER), default=NUM_ITER, type=int)
     args = parser.parse_args()
     
-    run(args.graph, args.dim, args.num_samples, arg.iter)
+    run(args.graph, args.dim, args.num_samples, args.iter)
 
 
 if __name__ == '__main__':
