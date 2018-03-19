@@ -124,9 +124,10 @@ def run(graph_fpath, embedding_size=DIM, num_sampled=NUM_SAMPLES, num_steps=NUM_
                         log = '%s %s,' % (log, close_word)
                     print(log)
         final_embeddings = normalized_embeddings.eval()
+
+    # Make a TSNE plot    
     tsne = TSNE(perplexity=30, n_components=2, init='pca', n_iter=5000)
     two_d_embeddings = tsne.fit_transform(final_embeddings[1:num_points+1, :])
-
     words = [rdictionary[i] for i in range(1, num_points+1)]
     plot(two_d_embeddings, words)
 
