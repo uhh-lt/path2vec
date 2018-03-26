@@ -61,11 +61,8 @@ def plot(embeddings, labels):
     pylab.show()
 
 
-def run(graph_fpath, embedding_size=DIM, num_sampled=NUM_SAMPLES, num_steps=NUM_ITER,
-     valid_size=3, num_points=20, batch_size=120):
-
-     """ Train graph embeddings """
-    
+def run(graph_fpath, embedding_size=DIM, num_sampled=NUM_SAMPLES, num_steps=NUM_ITER, valid_size=3, num_points=20, batch_size=120):
+    """ Train graph embeddings """
     # Load the data
     valid_examples = np.array(random.sample(range(10), valid_size))
     G = read_edges(graph_fpath)
@@ -87,7 +84,7 @@ def run(graph_fpath, embedding_size=DIM, num_sampled=NUM_SAMPLES, num_steps=NUM_
             stddev=1.0 / math.sqrt(embedding_size)))
         softmax_biases = tf.Variable(tf.zeros([node_size]))
         embed = tf.nn.embedding_lookup(embeddings, train_dataset)
-        
+
         loss = tf.reduce_mean(
             tf.nn.nce_loss(
                     weights=softmax_weights,
@@ -96,7 +93,7 @@ def run(graph_fpath, embedding_size=DIM, num_sampled=NUM_SAMPLES, num_steps=NUM_
                     labels=train_labels,
                     num_sampled=num_sampled,
                     num_classes=node_size))
-        
+
         optimizer = tf.train.AdagradOptimizer(1.0).minimize(loss)
         norm = tf.sqrt(tf.reduce_sum(tf.square(embeddings), 1, keep_dims=True))
         normalized_embeddings = embeddings / norm
@@ -125,7 +122,7 @@ def run(graph_fpath, embedding_size=DIM, num_sampled=NUM_SAMPLES, num_steps=NUM_
                     print(log)
         final_embeddings = normalized_embeddings.eval()
 
-    # Make a TSNE plot    
+    # Make a TSNE plot
     tsne = TSNE(perplexity=30, n_components=2, init='pca', n_iter=5000)
     two_d_embeddings = tsne.fit_transform(final_embeddings[1:num_points+1, :])
     words = [rdictionary[i] for i in range(1, num_points+1)]
