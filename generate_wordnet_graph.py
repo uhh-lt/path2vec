@@ -4,11 +4,12 @@
 from igraph import *
 from nltk.corpus import wordnet as wn
 
-g = Graph()
 
-synsets = list(wn.all_synsets())
+synsets = list(wn.all_synsets('n'))
 
 synsets = [s.name() for s in synsets]
+
+g = Graph()
 
 g.add_vertices(synsets)
 
@@ -32,6 +33,8 @@ for node in g.vs:
 
 g.add_edges(edges)
 g.es['type'] = edge_properties
+g.vs["label"] = g.vs["name"]
 print(g.summary())
 
-g.write_graphmlz('wordnet_nltk.graphmlz')
+
+# g.write_graphmlz('wordnet_nltk.graphmlz')
