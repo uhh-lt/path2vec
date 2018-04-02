@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
     cores = multiprocessing.cpu_count()-1
     ic = wordnet_ic.ic('ic-semcor.dat')
-    synsets = list(wn.all_synsets('n'))
+    synsets = list(wn.all_synsets('n'))[:5000]
     synsets = [s.name() for s in synsets]
     print('Total synsets:', len(synsets), file=sys.stderr)
     print('Method:', method, file=sys.stderr)
