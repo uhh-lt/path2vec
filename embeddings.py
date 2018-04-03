@@ -46,7 +46,6 @@ def build_vocabulary(pairs):
     for word in sorted_words:
         reverse_vocab[word] = index_val
         index_val += 1
-
     return vocab, train_words, reverse_vocab
 
 
@@ -71,23 +70,22 @@ def batch_generator(pairs, reverse_vocab):
             current_word_index = np.array([sent_seq[0]])
             context_word_index = np.array([sent_seq[1]])
             # get negative samples
-            neg_samples = get_negative_samples(current_word_index)
+            neg_samples0 = get_negative_samples(current_word_index, context_word_index)
+            neg_samples1 = get_negative_samples(context_word_index, current_word_index)
             # yield a batch here
             # batch should be a tuple of inputs and targets
-            yield [current_word_index, context_word_index, neg_samples], [np.array([sim]), np.zeros((1, negative))]
+            yield [current_word_index, context_word_index, neg_samples0], [np.array([sim]), np.zeros((1, negative))]
 
 
-def get_negative_samples(current_word_index):
+def get_negative_samples(current_word_index, context_word_index):
     # Generate random negative samples
     neg_samples = random.sample(range(vocab_size), negative)
-    while current_word_index in neg_samples:
+    while current_word_index in neg_samples or context_word_index in neg_samples:
         neg_samples = random.sample(range(vocab_size), negative)
     return np.array([neg_samples])
 
 
-embedding_dimension = 100
-min_count = 2
-window_size = 1
+embedding_dimension = 10
 negative = 1
 
 trainfile = sys.argv[1]
@@ -96,7 +94,7 @@ wordpairs = Wordpairs(trainfile)
 vocabulary, no_train_words, reverse_vocabulary = build_vocabulary(wordpairs)
 vocab_size = len(vocabulary)
 
-# generate embedding matrices with all values between -1/2d, 1/2d
+# generate embedding matrices with all values between -0.5d, 0.5d
 w_embedding = np.random.uniform(-0.5 / embedding_dimension, 0.5 / embedding_dimension,
                                 (vocab_size, embedding_dimension))
 c_embedding = np.random.uniform(-0.5 / embedding_dimension, 0.5 / embedding_dimension,
@@ -123,7 +121,7 @@ final_context = Lambda(lambda x: K.mean(x, axis=1), output_shape=(embedding_dime
 final_ns = Lambda(lambda x: K.mean(x, axis=1), output_shape=(embedding_dimension,),
                   name='final_ns_embedding')(negative_words_embedding)
 
-# The context is multiplied (dot product) with current word and negative sampled words
+# The current word is multiplied (dot product) with context word and negative sampled words
 word_context_product = dot([word_embedding, final_context], axes=-1, normalize=True,
                            name='word2context')
 negative_context_product = dot([word_embedding, final_ns], axes=-1, normalize=True,
