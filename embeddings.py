@@ -12,22 +12,44 @@ from keras.layers.embeddings import Embedding
 from keras.callbacks import Callback
 from keras.layers import merge, Flatten, Reshape
 import gzip
+from keras import optimizers
 import random
+from itertools import combinations
 import sys
 
 class SimilarityCallback(Callback):
     def on_epoch_end(self, epoch, logs={}):
-        for i in range(valid_size):
-            valid_word = inverted_vocabulary[valid_examples[i]]
-            top_k = 3  # number of nearest neighbors
-            sim = self._get_sim(valid_examples[i])
-            nearest = (-sim).argsort()[1:top_k + 1]
-            log_str = 'Nearest to %s:' % valid_word
-            for k in range(top_k):
-                close_word = inverted_vocabulary[nearest[k]]
-                log_str = '%s %s,' % (log_str, close_word)
+        pairs = combinations(valid_examples, 2)
+        for pair in pairs:
+            valid_word0 = pair[0]
+            valid_word1 = pair[1]
+            sim = self._get_sim_pair(inverted_vocabulary.index(valid_word0), inverted_vocabulary.index(valid_word1))
+            log_str = 'Similarity between %s and %s: %f' % (valid_word0, valid_word1, float(np.dot(sim[1][0], sim[2][0].T)))
             print(log_str)
+            #print('Embeddings of these 2 words:')
+            #print(sim[1][0])
+            #print(sim[2][0])
+        # for i in range(valid_size):
+        #     # valid_word = inverted_vocabulary[valid_examples[i]]
+        #     valid_word = valid_examples[i]
+        #     top_k = 3  # number of nearest neighbors
+        #     sim = self._get_sim(inverted_vocabulary.index(valid_word))
+        #     nearest = (-sim).argsort()[1:top_k + 1]
+        #     log_str = 'Nearest to %s:' % valid_word
+        #     for k in range(top_k):
+        #         close_word = inverted_vocabulary[nearest[k]]
+        #         log_str = '%s %s,' % (log_str, close_word)
+        #     print(log_str)
         return
+
+    @staticmethod
+    def _get_sim_pair(valid_word_idx, valid_word_idx2):
+        in_arr1 = np.zeros((1,))
+        in_arr2 = np.zeros((1,))
+        in_arr1[0,] = valid_word_idx
+        in_arr2[0,] = valid_word_idx2
+        out = validation_model.predict_on_batch([in_arr1, in_arr2])
+        return out
 
     @staticmethod
     def _get_sim(valid_word_idx):
@@ -101,39 +123,41 @@ def batch_generator(pairs, reverse_vocab):
             current_word_index = sent_seq[0]
             context_word_index = sent_seq[1]
             # get negative samples
-            neg_samples = get_negative_samples2(current_word_index, context_word_index)
-            batch = [np.array([x[0] for x in neg_samples[0]]), np.array([x[1] for x in neg_samples[0]])], \
-                    np.array([x if x==0 else sim for x in neg_samples[1]])
+            neg_samples = get_negative_samples(current_word_index, context_word_index)
+            # Producing instances one by one
+            for i in range(len(neg_samples[1])):
+                pred_sim = neg_samples[1][i]
+                if pred_sim != 0:
+                    pred_sim = sim
+                batch =[np.array([neg_samples[0][i][0]]), np.array([neg_samples[0][i][1]])], np.array([pred_sim])
+                yield batch
+
+
+            #batch = [np.array([x[0] for x in neg_samples[0]]), np.array([x[1] for x in neg_samples[0]])], \
+                    #np.array([x if x==0 else sim for x in neg_samples[1]])
             # yield a batch here
             # batch should be a tuple of inputs and targets
-            yield batch
+            #yield batch
             #yield [current_word_index, context_word_index, neg_samples], [np.array([sim]), np.zeros((1, negative))]
 
 
-def get_negative_samples2(current_word_index, context_word_index):
+def get_negative_samples(current_word_index, context_word_index):
     # Generate random negative samples
     neg_samples = skipgrams([current_word_index, context_word_index], vocab_size, window_size=1)
     return neg_samples
 
 
-def get_negative_samples(current_word_index, context_word_index):
-    # Generate random negative samples
-    neg_samples = random.sample(range(vocab_size), negative)
-    while current_word_index in neg_samples or context_word_index in neg_samples:
-        neg_samples = random.sample(range(vocab_size), negative)
-    return np.array([neg_samples])
-
-
 embedding_dimension = 10  # vector size
 negative = 1  # number of negative samples
-valid_size = 5
+valid_size = 4
 
 trainfile = sys.argv[1]
 
 wordpairs = Wordpairs(trainfile)
 no_train_words, vocabulary, inverted_vocabulary = build_vocabulary(wordpairs)
 vocab_size = len(vocabulary)
-valid_examples = np.random.choice(vocab_size, valid_size, replace=False)
+#valid_examples = np.random.choice(vocab_size, valid_size, replace=False)
+valid_examples = ['measure.n.02', 'fundamental_quantity.n.01', 'person.n.01', 'lover.n.03']
 
 # generate embedding matrices with all values between -0.5d, 0.5d
 w_embedding = np.random.uniform(-0.5 / embedding_dimension, 0.5 / embedding_dimension,
@@ -141,11 +165,10 @@ w_embedding = np.random.uniform(-0.5 / embedding_dimension, 0.5 / embedding_dime
 c_embedding = np.random.uniform(-0.5 / embedding_dimension, 0.5 / embedding_dimension,
                                 (vocab_size, embedding_dimension))
 
-# Model has 3 inputs
-# Current word index, context words indexes and negative sampled word indexes
+# Model has 2 inputs
+# Current word index, context word index
 word_index = Input(shape=(1,), name='Word')
 context_index = Input(shape=(1,), name='Context')
-# negative_samples = Input(shape=(negative,), name='Negative')
 
 # All the inputs are processed through embedding layers
 #word_embedding_layer = Embedding(input_dim=vocab_size, output_dim=embedding_dimension, weights=[w_embedding],
@@ -157,30 +180,27 @@ word_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1
 context_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1, name='Context_embeddings')
 
 word_embedding = word_embedding_layer(word_index)
-word_embedding = Flatten()(word_embedding)
-#word_embedding = Reshape((embedding_dimension, 1))(word_embedding)
+word_embedding = Flatten(name='word_vector')(word_embedding)
 context_embedding = context_embedding_layer(context_index)
-context_embedding = Flatten()(context_embedding)
-#context_embedding = Reshape((embedding_dimension, 1))(context_embedding)
-
+context_embedding = Flatten(name='context_vector')(context_embedding)
 
 
 # The current word is multiplied (dot product) with context word and negative sampled words
 word_context_product = dot([word_embedding, context_embedding], axes=1, normalize=True,
                           name='word2context')
 
-similarity = dot([word_embedding, context_embedding], axes=1)
+similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
 
 keras_model = Model(inputs=[word_index, context_index], outputs=[word_context_product])
 
-# binary crossentropy is applied on the output
-keras_model.compile(optimizer='adagrad', loss='mean_squared_error')
+adagrad = optimizers.adagrad(lr=0.1)
+keras_model.compile(optimizer=adagrad, loss='mean_squared_error', metrics=['mae'])
 
 # create a secondary validation model to run our similarity checks during training
-validation_model = Model(inputs=[word_index, context_index], outputs=similarity)
+validation_model = Model(inputs=[word_index, context_index], outputs=[similarity, word_embedding, context_embedding])
 
 sim_cb = SimilarityCallback()
-print(keras_model.summary())
+print(validation_model.summary())
 
 keras_model.fit_generator(batch_generator(wordpairs, vocabulary), callbacks=[sim_cb],
-                          steps_per_epoch=no_train_words, epochs=10, workers=4)
+                          steps_per_epoch=no_train_words, epochs=200, workers=4)
