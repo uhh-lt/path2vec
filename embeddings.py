@@ -20,9 +20,10 @@ trainfile = sys.argv[1]  # Gzipped file with pairs and their similarities
 
 wordpairs = Wordpairs(trainfile)
 
-# Building vocabulary...
+print('Building vocabulary...', file=sys.stderr)
 no_train_words, vocabulary, inverted_vocabulary = build_vocabulary(wordpairs)
 vocab_size = len(vocabulary)
+print('Building vocabulary finished', file=sys.stderr)
 
 valid_size = 4  # Number of random words to log their nearest neighbours after each epoch
 # valid_examples = np.random.choice(vocab_size, valid_size, replace=False)
@@ -63,8 +64,10 @@ keras_model.ivocab = inverted_vocabulary
 keras_model.vsize = vocab_size
 
 adagrad = optimizers.adagrad(lr=0.1)  # Choosing and tuning the optimizer
+adam = optimizers.Adam()
 
-keras_model.compile(optimizer=adagrad, loss='mean_squared_error', metrics=['mae'])
+
+keras_model.compile(optimizer=adam, loss='mean_squared_error', metrics=['mae'])
 
 print(keras_model.summary())
 
@@ -76,7 +79,7 @@ sim_cb = SimilarityCallback(validation_model=validation_model)
 # Let's start training!
 start = time.time()
 keras_model.fit_generator(batch_generator(wordpairs, vocabulary, vocab_size, negative), callbacks=[sim_cb],
-                          steps_per_epoch=no_train_words, epochs=10, workers=4)
+                          steps_per_epoch=no_train_words/2, epochs=10, workers=4)
 
 end = time.time()
 print('Training took:', int(end - start), 'seconds', file=sys.stderr)

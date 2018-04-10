@@ -49,8 +49,8 @@ class SimilarityCallback(Callback):
         """
         in_arr1 = np.zeros((1,))
         in_arr2 = np.zeros((1,))
-        in_arr1[0,] = valid_word_idx
-        in_arr2[0,] = valid_word_idx2
+        in_arr1[0, ] = valid_word_idx
+        in_arr2[0, ] = valid_word_idx2
         out = validation_model.predict_on_batch([in_arr1, in_arr2])
         return out
 
@@ -63,8 +63,8 @@ class SimilarityCallback(Callback):
         in_arr1 = np.zeros((1,))
         in_arr2 = np.zeros((1,))
         for i in range(vocab_size):
-            in_arr1[0,] = valid_word_idx
-            in_arr2[0,] = i
+            in_arr1[0, ] = valid_word_idx
+            in_arr2[0, ] = i
             out = validation_model.predict_on_batch([in_arr1, in_arr2])
             sim[i] = out
         return sim
@@ -95,6 +95,7 @@ def build_vocabulary(pairs):
 
     vocab = {}
     train_words = 0
+    vocab.setdefault('UNK', 0)
     for pair in pairs:
         (word0, word1, similarity) = pair.strip().split('\t')
         for word in [word0, word1]:
@@ -103,8 +104,7 @@ def build_vocabulary(pairs):
             train_words += 1
     print('Vocabulary size = %d' % len(vocab), file=sys.stderr)
     print('Total word tokens in the training set = %d' % train_words, file=sys.stderr)
-
-    sorted_words = reversed(sorted(vocab, key=lambda w: vocab[w]))
+    sorted_words = sorted(vocab, key=lambda w: vocab[w])
     inv_vocab = []
     reverse_vocab = {}
     index_val = 0
@@ -115,7 +115,7 @@ def build_vocabulary(pairs):
     return train_words, reverse_vocab, inv_vocab
 
 
-def batch_generator(pairs, reverse_vocab, vocab_size, nsize):
+def batch_generator(pairs, vocabulary, vocab_size, nsize):
     """
     Generates training batches
     """
@@ -133,10 +133,13 @@ def batch_generator(pairs, reverse_vocab, vocab_size, nsize):
             # split the line on tabs
             sequence = pair.strip().split('\t')
             words = sequence[:2]
-            sim = float(sequence[2])
+            sim = np.float64(sequence[2])
+            if sim == 0 or sim < 0.03 or sim > 1:
+                print(pair, file=sys.stderr)
+                continue
 
             # Convert real words to indexes
-            sent_seq = [reverse_vocab[word] for word in words]
+            sent_seq = [vocabulary[word] for word in words]
 
             current_word_index = sent_seq[0]
             context_word_index = sent_seq[1]
@@ -144,21 +147,19 @@ def batch_generator(pairs, reverse_vocab, vocab_size, nsize):
             # get negative samples
             neg_samples = get_negative_samples(current_word_index, context_word_index, vocab_size, nsize)
 
-            # Producing one-instance batches
-            for i in range(len(neg_samples[1])):
+            # Producing a batch containing two positive examples and negative samples
+            # batch should be a tuple of inputs and targets
+            n_examples = len(neg_samples[1])
+            batch = (
+                [np.zeros((n_examples, 1), dtype=int), np.zeros((n_examples, 1), dtype=int)], np.zeros((n_examples, 1)))
+            for i in range(n_examples):
+                batch[0][0][i] = neg_samples[0][i][0]
+                batch[0][1][i] = neg_samples[0][i][1]
                 pred_sim = neg_samples[1][i]
                 if pred_sim != 0:  # if this is a positive example, replace 1 with the real similarity from the file
                     pred_sim = sim
-                batch = [np.array([neg_samples[0][i][0]]), np.array([neg_samples[0][i][1]])], np.array([pred_sim])
-                yield batch
-
-            # This will be used to make real batches of size > 1
-            # batch = [np.array([x[0] for x in neg_samples[0]]), np.array([x[1] for x in neg_samples[0]])], \
-            # np.array([x if x==0 else sim for x in neg_samples[1]])
-            # yield a batch here
-            # batch should be a tuple of inputs and targets
-            # yield batch
-            # yield [current_word_index, context_word_index, neg_samples], [np.array([sim]), np.zeros((1, negative))]
+                batch[1][i] = pred_sim
+            yield batch
 
 
 def get_negative_samples(current_word_index, context_word_index, vocab_size, nsize):
