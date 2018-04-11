@@ -3,10 +3,12 @@
 
 import sys
 import numpy as np
+from numpy import float32 as real
 import gzip
 from itertools import combinations
 from keras.callbacks import Callback
 from keras.preprocessing.sequence import skipgrams
+from gensim import utils
 
 
 class SimilarityCallback(Callback):
@@ -49,8 +51,8 @@ class SimilarityCallback(Callback):
         """
         in_arr1 = np.zeros((1,))
         in_arr2 = np.zeros((1,))
-        in_arr1[0, ] = valid_word_idx
-        in_arr2[0, ] = valid_word_idx2
+        in_arr1[0,] = valid_word_idx
+        in_arr2[0,] = valid_word_idx2
         out = validation_model.predict_on_batch([in_arr1, in_arr2])
         return out
 
@@ -63,8 +65,8 @@ class SimilarityCallback(Callback):
         in_arr1 = np.zeros((1,))
         in_arr2 = np.zeros((1,))
         for i in range(vocab_size):
-            in_arr1[0, ] = valid_word_idx
-            in_arr2[0, ] = i
+            in_arr1[0,] = valid_word_idx
+            in_arr2[0,] = i
             out = validation_model.predict_on_batch([in_arr1, in_arr2])
             sim[i] = out
         return sim
@@ -92,27 +94,20 @@ def build_vocabulary(pairs):
     Counts the total number of training words
     Outputs this number, vocabulary and inverted vocabulary
     """
-
-    vocab = {}
+    vocabulary = {}
     train_words = 0
-    vocab.setdefault('UNK', 0)
     for pair in pairs:
         (word0, word1, similarity) = pair.strip().split('\t')
         for word in [word0, word1]:
-            vocab.setdefault(word, 0)
-            vocab[word] += 1
+            vocabulary[word] = 0
             train_words += 1
-    print('Vocabulary size = %d' % len(vocab), file=sys.stderr)
+    print('Vocabulary size = %d' % len(vocabulary), file=sys.stderr)
     print('Total word tokens in the training set = %d' % train_words, file=sys.stderr)
-    sorted_words = sorted(vocab, key=lambda w: vocab[w])
-    inv_vocab = []
-    reverse_vocab = {}
-    index_val = 0
-    for word in sorted_words:
-        inv_vocab.append(word)
-        reverse_vocab[word] = index_val
-        index_val += 1
-    return train_words, reverse_vocab, inv_vocab
+    inv_vocab = sorted(vocabulary.keys())
+    inv_vocab.insert(0, 'UNK')
+    for word in inv_vocab:
+        vocabulary[word] = inv_vocab.index(word)
+    return train_words, vocabulary, inv_vocab
 
 
 def batch_generator(pairs, vocabulary, vocab_size, nsize):
@@ -166,3 +161,36 @@ def get_negative_samples(current_word_index, context_word_index, vocab_size, nsi
     # Generate random negative samples, by default the same number as positive samples
     neg_samples = skipgrams([current_word_index, context_word_index], vocab_size, window_size=1, negative_samples=nsize)
     return neg_samples
+
+
+def save_word2vec_format(fname, vocab, vectors, binary=False):
+    """Store the input-hidden weight matrix in the same format used by the original
+        C word2vec-tool, for compatibility.
+        Parameters
+        ----------
+        fname : str
+            The file path used to save the vectors in
+        vocab : dict
+            The vocabulary of words with their ranks
+        vectors : numpy.array
+            The vectors to be stored
+        binary : bool
+            If True, the data wil be saved in binary word2vec format, else it will be saved in plain text.
+        """
+    if not (vocab or vectors):
+        raise RuntimeError('no input')
+    total_vec = len(vocab)
+    vector_size = vectors.shape[1]
+    print('storing %dx%d projection weights into %s' % (total_vec, vector_size, fname))
+    assert (len(vocab), vector_size) == vectors.shape
+    with utils.smart_open(fname, 'wb') as fout:
+        fout.write(utils.to_utf8('%s %s\n' % (total_vec, vector_size)))
+        position = 0
+        for element in sorted(vocab, key=lambda word: vocab[word]):
+            row = vectors[position]
+            if binary:
+                row = row.astype(real)
+                fout.write(utils.to_utf8(element) + b" " + row.tostring())
+            else:
+                fout.write(utils.to_utf8('%s %s\n' % (element, ' '.join(repr(val) for val in row))))
+            position += 1

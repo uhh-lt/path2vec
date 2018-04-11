@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import time
+import multiprocessing
 from keras import Input
 from keras.models import Model
 from keras.layers.merge import dot
@@ -15,6 +16,7 @@ from helpers import *
 
 embedding_dimension = 10  # vector size
 negative = 1  # number of negative samples
+cores = multiprocessing.cpu_count()
 
 trainfile = sys.argv[1]  # Gzipped file with pairs and their similarities
 
@@ -53,6 +55,7 @@ context_embedding = word_embedding_layer(context_index)
 context_embedding = Flatten(name='context_vector')(context_embedding)  # Some Keras black magic for reshaping
 
 # The current word embedding is multiplied (dot product) with the context word embedding
+# TODO: what about negative dot products? Insert sigmoid...?
 word_context_product = dot([word_embedding, context_embedding], axes=1, normalize=True, name='word2context')
 
 # Creatung the model itself...
@@ -74,12 +77,18 @@ print(keras_model.summary())
 # create a secondary validation model to run our similarity checks during training
 similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
 validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
+validation_model2 = Model(inputs=[word_index], outputs=[word_embedding])
 sim_cb = SimilarityCallback(validation_model=validation_model)
+
+steps = no_train_words/2
 
 # Let's start training!
 start = time.time()
 keras_model.fit_generator(batch_generator(wordpairs, vocabulary, vocab_size, negative), callbacks=[sim_cb],
-                          steps_per_epoch=no_train_words/2, epochs=10, workers=4)
+                          steps_per_epoch=steps, epochs=10, workers=cores)
 
 end = time.time()
 print('Training took:', int(end - start), 'seconds', file=sys.stderr)
+
+# Saving the resulting vectors:
+save_word2vec_format('embeddings.vec.gz', vocabulary, word_embedding_layer.get_weights()[0])
