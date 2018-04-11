@@ -9,6 +9,7 @@ from keras.layers.merge import dot
 from keras.layers.embeddings import Embedding
 from keras.layers import Flatten
 from keras import optimizers
+from keras import backend
 from helpers import *
 
 # This script trains word embeddings on pairs of words and their similarities.
@@ -58,7 +59,7 @@ context_embedding = Flatten(name='context_vector')(context_embedding)  # Some Ke
 # TODO: what about negative dot products? Insert sigmoid...?
 word_context_product = dot([word_embedding, context_embedding], axes=1, normalize=True, name='word2context')
 
-# Creatung the model itself...
+# Creating the model itself...
 keras_model = Model(inputs=[word_index, context_index], outputs=[word_context_product])
 
 # Assigning attributes:
@@ -69,7 +70,6 @@ keras_model.vsize = vocab_size
 adagrad = optimizers.adagrad(lr=0.1)  # Choosing and tuning the optimizer
 adam = optimizers.Adam()
 
-
 keras_model.compile(optimizer=adam, loss='mean_squared_error', metrics=['mae'])
 
 print(keras_model.summary())
@@ -77,10 +77,9 @@ print(keras_model.summary())
 # create a secondary validation model to run our similarity checks during training
 similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
 validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
-validation_model2 = Model(inputs=[word_index], outputs=[word_embedding])
 sim_cb = SimilarityCallback(validation_model=validation_model)
 
-steps = no_train_words/2
+steps = no_train_words/2  # How many times per epoch we will ask the batch generator to yield a batch
 
 # Let's start training!
 start = time.time()
@@ -92,3 +91,5 @@ print('Training took:', int(end - start), 'seconds', file=sys.stderr)
 
 # Saving the resulting vectors:
 save_word2vec_format('embeddings.vec.gz', vocabulary, word_embedding_layer.get_weights()[0])
+
+backend.clear_session()

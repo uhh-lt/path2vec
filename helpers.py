@@ -11,67 +11,6 @@ from keras.preprocessing.sequence import skipgrams
 from gensim import utils
 
 
-class SimilarityCallback(Callback):
-    """
-    Used to output word similarities (or neighbors) at the end of each epoch
-    """
-
-    def __init__(self, validation_model=None):
-        super(SimilarityCallback, self).__init__()
-        self.validation_model = validation_model
-
-    def on_epoch_end(self, epoch, logs={}):
-        pairs = combinations(self.model.vexamples, 2)
-        for pair in pairs:
-            valid_word0 = pair[0]
-            valid_word1 = pair[1]
-            sim = self._get_sim_pair(self.model.ivocab.index(valid_word0), self.model.ivocab.index(valid_word1),
-                                     self.validation_model)
-            log_str = 'Similarity between %s and %s: %f' % (valid_word0, valid_word1, sim)
-            print(log_str)
-
-        # The following code can be used to produce nearest neigbors for validation set:
-        # for i in range(valid_size):
-        #     # valid_word = inverted_vocabulary[valid_examples[i]]
-        #     valid_word = valid_examples[i]
-        #     top_k = 3  # number of nearest neighbors
-        #     sim = self._get_sim(inverted_vocabulary.index(valid_word))
-        #     nearest = (-sim).argsort()[1:top_k + 1]
-        #     log_str = 'Nearest to %s:' % valid_word
-        #     for k in range(top_k):
-        #         close_word = inverted_vocabulary[nearest[k]]
-        #         log_str = '%s %s,' % (log_str, close_word)
-        #     print(log_str)
-        return
-
-    @staticmethod
-    def _get_sim_pair(valid_word_idx, valid_word_idx2, validation_model):
-        """
-        Produces similarity between a pair of words, using validation model
-        """
-        in_arr1 = np.zeros((1,))
-        in_arr2 = np.zeros((1,))
-        in_arr1[0,] = valid_word_idx
-        in_arr2[0,] = valid_word_idx2
-        out = validation_model.predict_on_batch([in_arr1, in_arr2])
-        return out
-
-    @staticmethod
-    def _get_sim(valid_word_idx, validation_model, vocab_size):
-        """
-        Produces similarities to all other words from the vocabulary
-        """
-        sim = np.zeros((vocab_size,))
-        in_arr1 = np.zeros((1,))
-        in_arr2 = np.zeros((1,))
-        for i in range(vocab_size):
-            in_arr1[0,] = valid_word_idx
-            in_arr2[0,] = i
-            out = validation_model.predict_on_batch([in_arr1, in_arr2])
-            sim[i] = out
-        return sim
-
-
 class Wordpairs(object):
     """
     Reads the gzipped pairs file
@@ -82,8 +21,8 @@ class Wordpairs(object):
         self.filepath = filepath
 
     def __iter__(self):
-        with gzip.open(self.filepath, "rb") as rf:
-            for line in rf:
+        with gzip.open(self.filepath, "rb") as pairfile:
+            for line in pairfile:
                 if line.strip():
                     yield line.strip().decode('utf-8')
 
@@ -97,7 +36,7 @@ def build_vocabulary(pairs):
     vocabulary = {}
     train_words = 0
     for pair in pairs:
-        (word0, word1, similarity) = pair.strip().split('\t')
+        (word0, word1, similarity) = pair.split('\t')
         for word in [word0, word1]:
             vocabulary[word] = 0
             train_words += 1
@@ -126,11 +65,12 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize):
 
         for pair in pairs:
             # split the line on tabs
-            sequence = pair.strip().split('\t')
+            sequence = pair.split('\t')
             words = sequence[:2]
             sim = np.float64(sequence[2])
-            if sim == 0 or sim < 0.03 or sim > 1:
-                print(pair, file=sys.stderr)
+            # Checking for too small or too large values, just in case:
+            if sim < 0.01 or sim > 1:
+                print('Alert:', pair, file=sys.stderr)
                 continue
 
             # Convert real words to indexes
@@ -194,3 +134,64 @@ def save_word2vec_format(fname, vocab, vectors, binary=False):
             else:
                 fout.write(utils.to_utf8('%s %s\n' % (element, ' '.join(repr(val) for val in row))))
             position += 1
+
+
+class SimilarityCallback(Callback):
+    """
+    Used to output word similarities (or neighbors) at the end of each epoch
+    """
+
+    def __init__(self, validation_model=None):
+        super(SimilarityCallback, self).__init__()
+        self.validation_model = validation_model
+
+    def on_epoch_end(self, epoch, logs={}):
+        pairs = combinations(self.model.vexamples, 2)
+        for pair in pairs:
+            valid_word0 = pair[0]
+            valid_word1 = pair[1]
+            sim = self._get_sim_pair(self.model.ivocab.index(valid_word0), self.model.ivocab.index(valid_word1),
+                                     self.validation_model)
+            log_str = 'Similarity between %s and %s: %f' % (valid_word0, valid_word1, sim)
+            print(log_str)
+
+        # The following code can be used to produce nearest neigbors for validation set:
+        # for i in range(valid_size):
+        #     # valid_word = inverted_vocabulary[valid_examples[i]]
+        #     valid_word = valid_examples[i]
+        #     top_k = 3  # number of nearest neighbors
+        #     sim = self._get_sim(inverted_vocabulary.index(valid_word))
+        #     nearest = (-sim).argsort()[1:top_k + 1]
+        #     log_str = 'Nearest to %s:' % valid_word
+        #     for k in range(top_k):
+        #         close_word = inverted_vocabulary[nearest[k]]
+        #         log_str = '%s %s,' % (log_str, close_word)
+        #     print(log_str)
+        return
+
+    @staticmethod
+    def _get_sim_pair(valid_word_idx, valid_word_idx2, validation_model):
+        """
+        Produces similarity between a pair of words, using validation model
+        """
+        in_arr1 = np.zeros((1,))
+        in_arr2 = np.zeros((1,))
+        in_arr1[0,] = valid_word_idx
+        in_arr2[0,] = valid_word_idx2
+        out = validation_model.predict_on_batch([in_arr1, in_arr2])
+        return out
+
+    @staticmethod
+    def _get_sim(valid_word_idx, validation_model, vocab_size):
+        """
+        Produces similarities to all other words from the vocabulary
+        """
+        sim = np.zeros((vocab_size,))
+        in_arr1 = np.zeros((1,))
+        in_arr2 = np.zeros((1,))
+        for i in range(vocab_size):
+            in_arr1[0,] = valid_word_idx
+            in_arr2[0,] = i
+            out = validation_model.predict_on_batch([in_arr1, in_arr2])
+            sim[i] = out
+        return sim
