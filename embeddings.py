@@ -16,7 +16,7 @@ from helpers import *
 # A possible source of such data is Wordnet and its shortest paths.
 
 embedding_dimension = 10  # vector size
-negative = 1  # number of negative samples
+negative = 2  # number of negative samples
 cores = multiprocessing.cpu_count()
 
 trainfile = sys.argv[1]  # Gzipped file with pairs and their similarities
