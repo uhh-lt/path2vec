@@ -16,7 +16,8 @@ from helpers import *
 # A possible source of such data is Wordnet and its shortest paths.
 
 embedding_dimension = 10  # vector size
-negative = 2  # number of negative samples
+negative = 3  # number of negative samples
+batch_size = 10  # number of pairs in a batch
 cores = multiprocessing.cpu_count()
 
 trainfile = sys.argv[1]  # Gzipped file with pairs and their similarities
@@ -39,8 +40,10 @@ valid_examples = ['measure.n.02', 'fundamental_quantity.n.01', 'person.n.01', 'l
 
 # TODO: how to properly initialize weights?
 # generate embedding matrix with all values between -0.5d, 0.5d
-# w_embedding = np.random.uniform(-0.5 / embedding_dimension, 0.5 / embedding_dimension, (vocab_size, embedding_dimension))
-# word_embedding_layer = Embedding(input_dim=vocab_size, output_dim=embedding_dimension, weights=[w_embedding], name='Word_embeddings')
+# w_embedding = np.random.uniform(
+# -0.5 / embedding_dimension, 0.5 / embedding_dimension, (vocab_size, embedding_dimension))
+# word_embedding_layer = Embedding(
+# input_dim=vocab_size, output_dim=embedding_dimension, weights=[w_embedding], name='Word_embeddings')
 
 # For now, let's use Keras defaults for initialization:
 word_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1, name='Word_embeddings')
@@ -79,12 +82,12 @@ similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
 validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
 sim_cb = SimilarityCallback(validation_model=validation_model)
 
-steps = no_train_words/2  # How many times per epoch we will ask the batch generator to yield a batch
+steps = (no_train_words/2)/batch_size  # How many times per epoch we will ask the batch generator to yield a batch
 
 # Let's start training!
 start = time.time()
-keras_model.fit_generator(batch_generator(wordpairs, vocabulary, vocab_size, negative), callbacks=[sim_cb],
-                          steps_per_epoch=steps, epochs=10, workers=cores)
+keras_model.fit_generator(batch_generator(wordpairs, vocabulary, vocab_size, negative, batch_size), callbacks=[sim_cb],
+                          steps_per_epoch=steps, epochs=20, workers=cores)
 
 end = time.time()
 print('Training took:', int(end - start), 'seconds', file=sys.stderr)

@@ -49,7 +49,7 @@ def build_vocabulary(pairs):
     return train_words, vocabulary, inv_vocab
 
 
-def batch_generator(pairs, vocabulary, vocab_size, nsize):
+def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size):
     """
     Generates training batches
     """
@@ -62,7 +62,13 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize):
         # 2 - context word index
         # 3 - target similarity
         # 4 - the same for negative samples
+        samples_per_pair = 2 + 2 * nsize  # How many training instances we get from each pair
+        samples_per_batch = samples_per_pair * batch_size  # How many samples will be there in each batch
 
+        # Batch should be a tuple of inputs and targets. First we create it empty:
+        batch = ([np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)],
+                 np.zeros((samples_per_batch, 1)))
+        inst_counter = 0
         for pair in pairs:
             # split the line on tabs
             sequence = pair.split('\t')
@@ -79,22 +85,23 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize):
             current_word_index = sent_seq[0]
             context_word_index = sent_seq[1]
 
-            # get negative samples
+            # get negative samples for the current pair
             neg_samples = get_negative_samples(current_word_index, context_word_index, vocab_size, nsize)
 
-            # Producing a batch containing two positive examples and negative samples
-            # batch should be a tuple of inputs and targets
-            n_examples = len(neg_samples[1])
-            batch = (
-                [np.zeros((n_examples, 1), dtype=int), np.zeros((n_examples, 1), dtype=int)], np.zeros((n_examples, 1)))
-            for i in range(n_examples):
-                batch[0][0][i] = neg_samples[0][i][0]
-                batch[0][1][i] = neg_samples[0][i][1]
+            # Adding two positive examples and the corresponding negative samples to the current batch
+            for i in range(samples_per_pair):
+                batch[0][0][inst_counter] = neg_samples[0][i][0]
+                batch[0][1][inst_counter] = neg_samples[0][i][1]
                 pred_sim = neg_samples[1][i]
                 if pred_sim != 0:  # if this is a positive example, replace 1 with the real similarity from the file
                     pred_sim = sim
-                batch[1][i] = pred_sim
-            yield batch
+                batch[1][inst_counter] = pred_sim
+                inst_counter += 1
+            if inst_counter == samples_per_batch:
+                yield batch
+                inst_counter = 0
+                batch = ([np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)],
+                         np.zeros((samples_per_batch, 1)))
 
 
 def get_negative_samples(current_word_index, context_word_index, vocab_size, nsize):
