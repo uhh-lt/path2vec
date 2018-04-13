@@ -15,7 +15,7 @@ from helpers import *
 # This script trains word embeddings on pairs of words and their similarities.
 # A possible source of such data is Wordnet and its shortest paths.
 
-embedding_dimension = 10  # vector size
+embedding_dimension = 20  # vector size
 negative = 3  # number of negative samples
 batch_size = 10  # number of pairs in a batch
 cores = multiprocessing.cpu_count()
@@ -73,7 +73,7 @@ keras_model.vsize = vocab_size
 adagrad = optimizers.adagrad(lr=0.1)  # Choosing and tuning the optimizer
 adam = optimizers.Adam()
 
-keras_model.compile(optimizer=adam, loss='mean_squared_error', metrics=['mae'])
+keras_model.compile(optimizer=adam, loss='mean_squared_error', metrics=['mse'])
 
 print(keras_model.summary())
 
@@ -87,12 +87,13 @@ steps = (no_train_words/2)/batch_size  # How many times per epoch we will ask th
 # Let's start training!
 start = time.time()
 keras_model.fit_generator(batch_generator(wordpairs, vocabulary, vocab_size, negative, batch_size), callbacks=[sim_cb],
-                          steps_per_epoch=steps, epochs=20, workers=cores)
+                          steps_per_epoch=steps, epochs=10, workers=cores)
 
 end = time.time()
 print('Training took:', int(end - start), 'seconds', file=sys.stderr)
 
 # Saving the resulting vectors:
-save_word2vec_format('embeddings.vec.gz', vocabulary, word_embedding_layer.get_weights()[0])
+filename = 'embeddings_'+str(embedding_dimension)+'_'+str(negative)+'.vec.gz'
+save_word2vec_format(filename, vocabulary, word_embedding_layer.get_weights()[0])
 
 backend.clear_session()
