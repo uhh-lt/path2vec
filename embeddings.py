@@ -11,36 +11,40 @@ from keras.layers import Flatten
 from keras import optimizers
 from keras import backend
 from helpers import *
+from tensorflow.python.client import device_lib
+print(device_lib.list_local_devices())
 
 # This script trains word embeddings on pairs of words and their similarities.
 # A possible source of such data is Wordnet and its shortest paths.
 
 # Arguments:
+
 # [obligatory] tab-separated gzipped file with training pairs and their similarities:
 # person.n.01     lover.n.03       0.22079177574204348
 # etc...
+
+# [obligatory] vector size (20, 40, 100, 300, etc)
+
 # [optional] gzipped JSON file with the vocabulary (list of words):
 # ["UNK", "'hood.n.01", "1530s.n.01", "15_may_organization.n.01", "1750s.n.01", "1760s.n.01"...]
 # etc
 # If the vocabulary file is not provided, it will be inferred from the training set
 # (can be painfully slow for large datasets)
 
-
-embedding_dimension = 20  # vector size
+trainfile = sys.argv[1]  # Gzipped file with pairs and their similarities
+embedding_dimension = int(sys.argv[2])  # vector size
 negative = 3  # number of negative samples
 batch_size = 10  # number of pairs in a batch
 cores = multiprocessing.cpu_count()
 
-trainfile = sys.argv[1]  # Gzipped file with pairs and their similarities
-
 wordpairs = Wordpairs(trainfile)
 
-if len(sys.argv) < 3:
+if len(sys.argv) < 4
     print('Building vocabulary from the training set...', file=sys.stderr)
     no_train_pairs, vocabulary, inverted_vocabulary = build_vocabulary(wordpairs)
     print('Building vocabulary finished', file=sys.stderr)
 else:
-    vocabulary_file = sys.argv[2]  # JSON file with the ready-made vocabulary
+    vocabulary_file = sys.argv[3  # JSON file with the ready-made vocabulary
     print('Loading vocabulary from file', vocabulary_file, file=sys.stderr)
     vocabulary, inverted_vocabulary = vocab_from_file(vocabulary_file)
     print('Counting the number of pairs in the training set...')
