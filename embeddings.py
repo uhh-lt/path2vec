@@ -39,12 +39,12 @@ cores = multiprocessing.cpu_count()
 
 wordpairs = Wordpairs(trainfile)
 
-if len(sys.argv) < 4
+if len(sys.argv) < 4:
     print('Building vocabulary from the training set...', file=sys.stderr)
     no_train_pairs, vocabulary, inverted_vocabulary = build_vocabulary(wordpairs)
     print('Building vocabulary finished', file=sys.stderr)
 else:
-    vocabulary_file = sys.argv[3  # JSON file with the ready-made vocabulary
+    vocabulary_file = sys.argv[3]  # JSON file with the ready-made vocabulary
     print('Loading vocabulary from file', vocabulary_file, file=sys.stderr)
     vocabulary, inverted_vocabulary = vocab_from_file(vocabulary_file)
     print('Counting the number of pairs in the training set...')
@@ -95,12 +95,12 @@ keras_model.vexamples = valid_examples
 keras_model.ivocab = inverted_vocabulary
 keras_model.vsize = vocab_size
 
-adagrad = optimizers.adagrad(lr=0.1)  # Choosing and tuning the optimizer
 adam = optimizers.Adam()
 
 keras_model.compile(optimizer=adam, loss='mean_squared_error', metrics=['mse'])
 
 print(keras_model.summary())
+print('Batch size:', batch_size)
 
 # create a secondary validation model to run our similarity checks during training
 similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
@@ -118,7 +118,7 @@ end = time.time()
 print('Training took:', int(end - start), 'seconds', file=sys.stderr)
 
 # Saving the resulting vectors:
-filename = 'embeddings_'+str(embedding_dimension)+'_'+str(negative)+'.vec.gz'
+filename = trainfile.split('.')[0]+'_embeddings_'+str(embedding_dimension)+'_'+str(negative)+'.vec.gz'
 save_word2vec_format(filename, vocabulary, word_embedding_layer.get_weights()[0])
 
 backend.clear_session()

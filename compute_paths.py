@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/projects/ltg/python3/bin/python3
 # coding: utf-8
 
 import sys
@@ -20,19 +20,27 @@ def calc_similarity(pair):
         similarity = syns0.lch_similarity(syns1)  # Leacock-Chodorow
     else:
         return None
-    print(pair[0] + '\t' + pair[1] + '\t', similarity)
+    if similarity > 0.01:
+        print(pair[0] + '\t' + pair[1] + '\t'+str(similarity)+'\n')
     return similarity
 
 
 if __name__ == '__main__':
     method = sys.argv[1]
+    corpus = sys.argv[2]  # semcor or brown
 
-    cores = multiprocessing.cpu_count()-1
-    ic = wordnet_ic.ic('ic-semcor.dat')
-    synsets = list(wn.all_synsets('n'))[:5000]
+    cores = 10
+    if corpus == 'semcor':
+        ic = wordnet_ic.ic('ic-semcor.dat')
+    elif corpus == 'brown':
+        ic = wordnet_ic.ic('ic-brown.dat')
+    synsets = list(wn.all_synsets('n'))
     synsets = [s.name() for s in synsets]
     print('Total synsets:', len(synsets), file=sys.stderr)
     print('Method:', method, file=sys.stderr)
+    print('Corpus:', corpus, file=sys.stderr)
+    print('Cores:', cores, file=sys.stderr)
+    exit()
 
     print('Calculating total number of pairs...', file=sys.stderr)
     pairs = factorial(len(synsets)) // factorial(2) // factorial(len(synsets) - 2)
