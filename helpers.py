@@ -9,6 +9,7 @@ from itertools import combinations
 from keras.callbacks import Callback
 from keras.preprocessing.sequence import skipgrams
 from gensim import utils
+import json
 
 
 class Wordpairs(object):
@@ -27,26 +28,41 @@ class Wordpairs(object):
                     yield line.strip().decode('utf-8')
 
 
+def vocab_from_file(vocabfile):
+    """
+    Generates vocabulary from a vocabulary file in JSON
+    Outputs vocabulary and inverted vocabulary
+    """
+
+    vfile = gzip.open(vocabfile, 'r').read()
+    inv_vocab = json.loads(vfile.decode('utf-8'))
+    vocabulary = {}
+    for no, word in enumerate(inv_vocab):
+        vocabulary[word] = no
+    print('Vocabulary size = %d' % len(vocabulary), file=sys.stderr)
+    return vocabulary, inv_vocab
+
+
 def build_vocabulary(pairs):
     """
     Generates vocabulary from the sentences
-    Counts the total number of training words
+    Counts the total number of training pairs
     Outputs this number, vocabulary and inverted vocabulary
     """
     vocabulary = {}
-    train_words = 0
+    train_pairs = 0
     for pair in pairs:
         (word0, word1, similarity) = pair.split('\t')
+        train_pairs += 1
         for word in [word0, word1]:
             vocabulary[word] = 0
-            train_words += 1
     print('Vocabulary size = %d' % len(vocabulary), file=sys.stderr)
-    print('Total word tokens in the training set = %d' % train_words, file=sys.stderr)
+    print('Total word pairs in the training set = %d' % train_pairs, file=sys.stderr)
     inv_vocab = sorted(vocabulary.keys())
     inv_vocab.insert(0, 'UNK')
     for word in inv_vocab:
         vocabulary[word] = inv_vocab.index(word)
-    return train_words, vocabulary, inv_vocab
+    return train_pairs, vocabulary, inv_vocab
 
 
 def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size):
@@ -74,10 +90,6 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size):
             sequence = pair.split('\t')
             words = sequence[:2]
             sim = np.float64(sequence[2])
-            # Checking for too small or too large values, just in case:
-            if sim < 0.01 or sim > 1:
-                print('Alert:', pair, file=sys.stderr)
-                continue
 
             # Convert real words to indexes
             sent_seq = [vocabulary[word] for word in words]

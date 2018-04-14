@@ -15,6 +15,17 @@ from helpers import *
 # This script trains word embeddings on pairs of words and their similarities.
 # A possible source of such data is Wordnet and its shortest paths.
 
+# Arguments:
+# [obligatory] tab-separated gzipped file with training pairs and their similarities:
+# person.n.01     lover.n.03       0.22079177574204348
+# etc...
+# [optional] gzipped JSON file with the vocabulary (list of words):
+# ["UNK", "'hood.n.01", "1530s.n.01", "15_may_organization.n.01", "1750s.n.01", "1760s.n.01"...]
+# etc
+# If the vocabulary file is not provided, it will be inferred from the training set
+# (can be painfully slow for large datasets)
+
+
 embedding_dimension = 20  # vector size
 negative = 3  # number of negative samples
 batch_size = 10  # number of pairs in a batch
@@ -24,11 +35,21 @@ trainfile = sys.argv[1]  # Gzipped file with pairs and their similarities
 
 wordpairs = Wordpairs(trainfile)
 
-print('Building vocabulary...', file=sys.stderr)
-no_train_words, vocabulary, inverted_vocabulary = build_vocabulary(wordpairs)
-vocab_size = len(vocabulary)
-print('Building vocabulary finished', file=sys.stderr)
+if len(sys.argv) < 3:
+    print('Building vocabulary from the training set...', file=sys.stderr)
+    no_train_pairs, vocabulary, inverted_vocabulary = build_vocabulary(wordpairs)
+    print('Building vocabulary finished', file=sys.stderr)
+else:
+    vocabulary_file = sys.argv[2]  # JSON file with the ready-made vocabulary
+    print('Loading vocabulary from file', vocabulary_file, file=sys.stderr)
+    vocabulary, inverted_vocabulary = vocab_from_file(vocabulary_file)
+    print('Counting the number of pairs in the training set...')
+    no_train_pairs = 0
+    for line in wordpairs:
+        no_train_pairs += 1
+    print('Number of pairs in the training set:', no_train_pairs)
 
+vocab_size = len(vocabulary)
 valid_size = 4  # Number of random words to log their nearest neighbours after each epoch
 # valid_examples = np.random.choice(vocab_size, valid_size, replace=False)
 
@@ -82,7 +103,7 @@ similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
 validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
 sim_cb = SimilarityCallback(validation_model=validation_model)
 
-steps = (no_train_words/2)/batch_size  # How many times per epoch we will ask the batch generator to yield a batch
+steps = no_train_pairs / batch_size  # How many times per epoch we will ask the batch generator to yield a batch
 
 # Let's start training!
 start = time.time()
