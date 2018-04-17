@@ -25,3 +25,9 @@ word3 = 'lover.n.03'
 
 for pair in combinations([word0, word1, word2, word3], 2):
     print(pair, model.similarity(pair[0], pair[1]))
+
+for word in [word0, word1, word2, word3]:
+    print(word)
+    for i in model.most_similar(word):
+        print(i)
+

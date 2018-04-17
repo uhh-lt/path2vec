@@ -112,7 +112,7 @@ steps = no_train_pairs / batch_size  # How many times per epoch we will ask the 
 # Let's start training!
 start = time.time()
 keras_model.fit_generator(batch_generator(wordpairs, vocabulary, vocab_size, negative, batch_size), callbacks=[sim_cb],
-                          steps_per_epoch=steps, epochs=10, workers=cores)
+                          steps_per_epoch=steps, epochs=20, workers=cores, verbose=2)
 
 end = time.time()
 print('Training took:', int(end - start), 'seconds', file=sys.stderr)
