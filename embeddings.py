@@ -34,19 +34,21 @@ print(device_lib.list_local_devices())
 # (can be painfully slow for large datasets)
 
 trainfile = sys.argv[1]  # Gzipped file with pairs and their similarities
-embedding_dimension = int(sys.argv[2])  # vector size
+embedding_dimension = int(sys.argv[2])  # vector size (for example, 20)
+batch_size = int(sys.argv[3])  # number of pairs in a batch (for example, 10)
+learn_rate = float(sys.argv[4])   # Learning rate, default for Adam is 0.001
+
 negative = 3  # number of negative samples
-batch_size = 10  # number of pairs in a batch
 cores = multiprocessing.cpu_count()
 
 wordpairs = Wordpairs(trainfile)
 
-if len(sys.argv) < 4:
+if len(sys.argv) < 6:
     print('Building vocabulary from the training set...', file=sys.stderr)
     no_train_pairs, vocabulary, inverted_vocabulary = build_vocabulary(wordpairs)
     print('Building vocabulary finished', file=sys.stderr)
 else:
-    vocabulary_file = sys.argv[3]  # JSON file with the ready-made vocabulary
+    vocabulary_file = sys.argv[5]  # JSON file with the ready-made vocabulary
     print('Loading vocabulary from file', vocabulary_file, file=sys.stderr)
     vocabulary, inverted_vocabulary = vocab_from_file(vocabulary_file)
     print('Counting the number of pairs in the training set...')
@@ -97,14 +99,15 @@ keras_model.vexamples = valid_examples
 keras_model.ivocab = inverted_vocabulary
 keras_model.vsize = vocab_size
 
-adam = optimizers.Adam()
+adam = optimizers.Adam(lr=learn_rate)
 
 keras_model.compile(optimizer=adam, loss='mean_squared_error', metrics=['mse'])
 
 print(keras_model.summary())
 print('Batch size:', batch_size)
 
-train_name = trainfile.split('.')[0] + '_embeddings_' + str(embedding_dimension)
+train_name = trainfile.split('.')[0] + '_embeddings_vsize' \
+             + str(embedding_dimension)+'_bsize'+str(batch_size)+'_lr'+str(learn_rate)
 
 # create a secondary validation model to run our similarity checks during training
 similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
