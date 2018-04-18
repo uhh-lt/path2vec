@@ -10,8 +10,10 @@ from keras.layers.embeddings import Embedding
 from keras.layers import Flatten
 from keras import optimizers
 from keras import backend
+from keras.callbacks import TensorBoard
 from helpers import *
 from tensorflow.python.client import device_lib
+
 print(device_lib.list_local_devices())
 
 # This script trains word embeddings on pairs of words and their similarities.
@@ -102,23 +104,28 @@ keras_model.compile(optimizer=adam, loss='mean_squared_error', metrics=['mse'])
 print(keras_model.summary())
 print('Batch size:', batch_size)
 
+train_name = trainfile.split('.')[0] + '_embeddings_' + str(embedding_dimension)
+
 # create a secondary validation model to run our similarity checks during training
 similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
 validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
 sim_cb = SimilarityCallback(validation_model=validation_model)
 
+loss_plot = TensorBoard(log_dir=train_name + '_logs', write_graph=False, embeddings_freq=5)
+
 steps = no_train_pairs / batch_size  # How many times per epoch we will ask the batch generator to yield a batch
 
 # Let's start training!
 start = time.time()
-keras_model.fit_generator(batch_generator(wordpairs, vocabulary, vocab_size, negative, batch_size), callbacks=[sim_cb],
-                          steps_per_epoch=steps, epochs=20, workers=cores, verbose=2)
+history = keras_model.fit_generator(batch_generator(wordpairs, vocabulary, vocab_size, negative, batch_size),
+                                    callbacks=[sim_cb, loss_plot], steps_per_epoch=steps, epochs=20, workers=cores,
+                                    verbose=2)
 
 end = time.time()
 print('Training took:', int(end - start), 'seconds', file=sys.stderr)
 
 # Saving the resulting vectors:
-filename = trainfile.split('.')[0]+'_embeddings_'+str(embedding_dimension)+'_'+str(negative)+'.vec.gz'
+filename = train_name + '.vec.gz'
 save_word2vec_format(filename, vocabulary, word_embedding_layer.get_weights()[0])
 
 backend.clear_session()
