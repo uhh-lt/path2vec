@@ -10,6 +10,7 @@ from keras.callbacks import Callback
 from keras.preprocessing.sequence import skipgrams
 from gensim import utils
 import json
+import time
 
 
 class Wordpairs(object):
@@ -69,6 +70,7 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size):
     """
     Generates training batches
     """
+    timing = True  # Whether to print out batch generation time
     while True:
         # Iterate over all word pairs
         # For each pair generate word index sequence
@@ -85,6 +87,7 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size):
         batch = ([np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)],
                  np.zeros((samples_per_batch, 1)))
         inst_counter = 0
+        start = time.time()
         for pair in pairs:
             # split the line on tabs
             sequence = pair.split('\t')
@@ -111,9 +114,14 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size):
                 inst_counter += 1
             if inst_counter == samples_per_batch:
                 yield batch
+                end = time.time()
+                if timing:
+                    print('Batch generation took', end-start, file=sys.stderr)
                 inst_counter = 0
                 batch = ([np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)],
                          np.zeros((samples_per_batch, 1)))
+                start = time.time()
+
 
 
 def get_negative_samples(current_word_index, context_word_index, vocab_size, nsize):
