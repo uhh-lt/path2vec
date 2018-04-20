@@ -107,7 +107,7 @@ print(keras_model.summary())
 print('Batch size:', batch_size)
 
 train_name = trainfile.split('.')[0] + '_embeddings_vsize' \
-             + str(embedding_dimension)+'_bsize'+str(batch_size)+'_lr'+str(learn_rate)
+             + str(embedding_dimension)+'_bsize'+str(batch_size)+'_lr'+str(learn_rate).split('.')[-1]
 
 # create a secondary validation model to run our similarity checks during training
 similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
