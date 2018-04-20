@@ -70,7 +70,7 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size):
     """
     Generates training batches
     """
-    timing = True  # Whether to print out batch generation time
+    timing = False  # Whether to print out batch generation time
     while True:
         # Iterate over all word pairs
         # For each pair generate word index sequence
