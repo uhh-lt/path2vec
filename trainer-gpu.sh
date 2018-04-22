@@ -1,13 +1,9 @@
-export CUDA_VISIBLE_DEVICES=$3
 dataset=$1
-lrate=$2
+vsize=$2
+export CUDA_VISIBLE_DEVICES=$3
 
-# Vector sizes
-for vsize in 16 32 64 100 200 300
-    do
-	# Batch sizes
-	for bsize in 10
-	    do
-		    python embeddings.py ${dataset} ${vsize} ${bsize} ${lrate} synsets_vocab.json.gz
-	    done
- done
+for lrate in 0.001 0.002 0.0005 0.004 ; do
+	for bsize in 100 200 50 25 10 ; do
+		python embeddings.py ${dataset} ${vsize} ${bsize} ${lrate} synsets_vocab.json.gz
+	done
+done
