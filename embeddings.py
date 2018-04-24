@@ -114,7 +114,7 @@ similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
 validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
 sim_cb = SimilarityCallback(validation_model=validation_model)
 
-loss_plot = TensorBoard(log_dir=train_name + '_logs', write_graph=False, embeddings_freq=5)
+loss_plot = TensorBoard(log_dir=train_name + '_logs', write_graph=False, embeddings_freq=10)
 
 steps = no_train_pairs / batch_size  # How many times per epoch we will ask the batch generator to yield a batch
 
