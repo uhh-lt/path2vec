@@ -92,6 +92,8 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size):
             # split the line on tabs
             sequence = pair.split('\t')
             words = sequence[:2]
+            if words[0] not in vocabulary or words[1] not in vocabulary:
+                continue
             sim = np.float64(sequence[2])
 
             # Convert real words to indexes
