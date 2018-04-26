@@ -4,3 +4,4 @@ keras
 tensorflow
 gensim
 nltk
+matplotlib
