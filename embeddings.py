@@ -114,7 +114,7 @@ validation_model = Model(inputs=[word_index, context_index], outputs=[similarity
 sim_cb = SimilarityCallback(validation_model=validation_model)
 
 loss_plot = TensorBoard(log_dir=train_name + '_logs', write_graph=False, embeddings_freq=10)
-earlystopping = EarlyStopping(monitor='loss', min_delta=0.0001, patience=2, verbose=1, mode='auto')
+earlystopping = EarlyStopping(monitor='loss', min_delta=0.0001, patience=1, verbose=1, mode='auto')
 
 steps = no_train_pairs / batch_size  # How many times per epoch we will ask the batch generator to yield a batch
 
