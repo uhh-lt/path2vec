@@ -1,4 +1,5 @@
 numpy
+scipy
 keras
 tensorflow
 gensim
