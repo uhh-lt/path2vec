@@ -118,12 +118,11 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size):
                 yield batch
                 end = time.time()
                 if timing:
-                    print('Batch generation took', end-start, file=sys.stderr)
+                    print('Batch generation took', end - start, file=sys.stderr)
                 inst_counter = 0
                 batch = ([np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)],
                          np.zeros((samples_per_batch, 1)))
                 start = time.time()
-
 
 
 def get_negative_samples(current_word_index, context_word_index, vocab_size, nsize):

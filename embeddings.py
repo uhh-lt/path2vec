@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 # coding: utf-8
 
-import time
 import multiprocessing
 from keras import Input
 from keras.models import Model
@@ -10,7 +9,7 @@ from keras.layers.embeddings import Embedding
 from keras.layers import Flatten
 from keras import optimizers
 from keras import backend
-from keras.callbacks import TensorBoard
+from keras.callbacks import TensorBoard, EarlyStopping
 from helpers import *
 from tensorflow.python.client import device_lib
 
@@ -115,14 +114,15 @@ validation_model = Model(inputs=[word_index, context_index], outputs=[similarity
 sim_cb = SimilarityCallback(validation_model=validation_model)
 
 loss_plot = TensorBoard(log_dir=train_name + '_logs', write_graph=False, embeddings_freq=10)
+earlystopping = EarlyStopping(monitor='loss', min_delta=0.0001, patience=2, verbose=1, mode='auto')
 
 steps = no_train_pairs / batch_size  # How many times per epoch we will ask the batch generator to yield a batch
 
 # Let's start training!
 start = time.time()
 history = keras_model.fit_generator(batch_generator(wordpairs, vocabulary, vocab_size, negative, batch_size),
-                                    callbacks=[sim_cb, loss_plot], steps_per_epoch=steps, epochs=5, workers=cores,
-                                    verbose=1)
+                                    callbacks=[sim_cb, loss_plot, earlystopping], steps_per_epoch=steps, epochs=10,
+                                    workers=cores, verbose=1)
 
 end = time.time()
 print('Training took:', int(end - start), 'seconds', file=sys.stderr)
