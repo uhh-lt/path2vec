@@ -23,6 +23,11 @@ if __name__ == '__main__':
     method = sys.argv[1]  # jcn or lch
     corpus = sys.argv[2]  # semcor or brown
 
+    preserve = False  # Preserve SimLex similarities?
+
+    if len(sys.argv) > 3:
+        preserve = True
+
     maxval = 1000.0  # This value will be assigned to extremely high-similarity pairs (like 1e+300)
 
 
@@ -33,6 +38,7 @@ if __name__ == '__main__':
             continue
         res = line.strip().split('\t')
         (word0, word1, simlex_sim) = res
+        simlex_sim = float(simlex_sim)
         synsets0 = reversed(wn.synsets(word0.strip(), 'n'))
         synsets1 = reversed(wn.synsets(word1.strip(), 'n'))
         best_pair = None
@@ -46,18 +52,19 @@ if __name__ == '__main__':
                 best_sim = wordnet_sim
         if not best_pair:
             print('Weird data:', line, file=sys.stderr)
-            print('\t'.join([s.name() for s in pair]) + '\t' + str(maxval))
+            if preserve:
+                print('\t'.join([s.name() for s in pair]) + '\t' + str(simlex_sim))
+            else:
+                print('\t'.join([s.name() for s in pair]) + '\t' + str(maxval))
             continue
+        if preserve:
+            best_sim = simlex_sim
         if best_sim > 1000:
                 print('Clipped similarity to %f' % maxval, best_pair, best_sim, file=sys.stderr)
                 best_sim = maxval
         if best_sim < 0.0001:
                 print('Clipped similarity to 0.0', best_pair, best_sim, file=sys.stderr)
                 best_sim = 0.0
-        #if method == 'jcn':
-        #    if best_sim > 1:
-        #        print('Clipped similarity to 1.0:', best_pair, best_sim, file=sys.stderr)
-        #        best_sim = 1.0
         print('\t'.join([s.name() for s in best_pair])+'\t'+str(best_sim))
 
 
