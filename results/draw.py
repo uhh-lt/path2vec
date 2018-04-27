@@ -17,8 +17,8 @@ for line in sys.stdin:
         continue
     res = line.strip().split('\t')
     (corpus, vsize, bsize, lrate, wordnet, human) = res
-    if lrate != '0.001':
-        continue
+    # if lrate != '0.001':
+    #    continue
     lrates.append(lrate)
     vsize = float(vsize)
     vectorsizes.append(vsize)
@@ -44,7 +44,7 @@ batchsizes = np.array(batchsizes)
 human_scores = np.array(human_scores)
 
 plt.figure()
-plt.plot((0, 300), (graph_score, graph_score), 'red', label='Pure WordNet')
+plt.plot((0, np.max(vectorsizes)), (graph_score, graph_score), 'red', label='Pure WordNet')
 for batch in sorted(diff_bsizes):
     x = vectorsizes[batchsizes == batch]
     y = human_scores[batchsizes == batch]
@@ -54,6 +54,6 @@ plt.ylabel('Spearman rank correlation on SimLex')
 plt.legend(loc='best')
 plt.grid(True)
 plt.title(corpus)
-#plt.show()
+# plt.show()
 plt.savefig(corpus+'.png', dpi=300)
 plt.close()
