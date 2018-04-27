@@ -15,6 +15,7 @@ model.init_sims(replace=True)
 
 a = model.evaluate_word_pairs(simfile, dummy4unknown=True)
 
-name = modelfile.split('.')[0]
+name = modelfile.replace('_embeddings_', '_')[:-7]
+
 print(name+'\t'+str(a[1][0]))
 
