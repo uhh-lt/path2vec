@@ -6,8 +6,8 @@ import sys
 
 def check(dictionary):
     ready = True
-    for key in dictionary:
-        if dictionary[key]['count'] < 1000:  # We want that many samples per bin
+    for el in dictionary:
+        if dictionary[el]['count'] < samples_per_bin:
             ready = False
             break
     return ready
@@ -41,6 +41,7 @@ elif sys.argv[1] == 'lch':
     upper = lch_max
     lower = lch_min
 
+samples_per_bin = 1000
 no_bins = 10  # We want that many bins
 
 step = (upper - lower) / no_bins
@@ -60,8 +61,9 @@ for line in sys.stdin:
     similarity = float(sim)
     for key in bins:
         if bins[key]['lower'] <= similarity < bins[key]['upper']:
+            if bins[key]['count'] < samples_per_bin:
+                print(line.strip())
             bins[key]['count'] += 1
-    print(line.strip())
     state = check(bins)
     if state:
         break
