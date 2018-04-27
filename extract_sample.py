@@ -7,7 +7,7 @@ import sys
 def check(dictionary):
     ready = True
     for key in dictionary:
-        if dictionary[key]['count'] < 1000:
+        if dictionary[key]['count'] < 1000:  # We want that many samples per bin
             ready = False
             break
     return ready
@@ -41,7 +41,7 @@ elif sys.argv[1] == 'lch':
     upper = lch_max
     lower = lch_min
 
-no_bins = 10
+no_bins = 10  # We want that many bins
 
 step = (upper - lower) / no_bins
 
