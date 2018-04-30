@@ -73,7 +73,7 @@ def run(graph_fpath, embedding_size=DIM, num_sampled=NUM_SAMPLES, num_steps=NUM_
 
     # Construct the computational graph
     graph = tf.Graph()
-    with graph.as_default(), tf.device(DEVICE):
+    with tf.device(DEVICE):
         train_dataset = tf.placeholder(tf.int32, shape=[edges_size])
         train_labels = tf.placeholder(tf.int32, shape=[edges_size, 1])
         valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
