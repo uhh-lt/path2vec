@@ -26,6 +26,10 @@ print(device_lib.list_local_devices())
 
 # [obligatory] vector size (20, 40, 100, 300, etc)
 
+# [obligatory] batch size (10, 20, 60, 100 etc)
+
+# [obligatory] learning rate (default for Adam is 0.001)
+
 # [optional] gzipped JSON file with the vocabulary (list of words):
 # ["UNK", "'hood.n.01", "1530s.n.01", "15_may_organization.n.01", "1750s.n.01", "1760s.n.01"...]
 # etc
@@ -35,7 +39,7 @@ print(device_lib.list_local_devices())
 trainfile = sys.argv[1]  # Gzipped file with pairs and their similarities
 embedding_dimension = int(sys.argv[2])  # vector size (for example, 20)
 batch_size = int(sys.argv[3])  # number of pairs in a batch (for example, 10)
-learn_rate = float(sys.argv[4])   # Learning rate, default for Adam is 0.001
+learn_rate = float(sys.argv[4])   # Learning rate
 
 negative = 3  # number of negative samples
 cores = multiprocessing.cpu_count()
@@ -97,6 +101,8 @@ keras_model = Model(inputs=[word_index, context_index], outputs=[word_context_pr
 keras_model.vexamples = valid_examples
 keras_model.ivocab = inverted_vocabulary
 keras_model.vsize = vocab_size
+
+# TODO:  increase the batch size during training, as in https://openreview.net/pdf?id=B1Yy1BxCZ ?
 
 adam = optimizers.Adam(lr=learn_rate)
 
