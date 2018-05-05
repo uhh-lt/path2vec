@@ -55,6 +55,8 @@ for i in range(no_bins):
     bins[i]['count'] = 0
     start += step
 
+print(bins, file=sys.stderr)
+
 for line in sys.stdin:
     res = line.strip().split('\t')
     (synset0, synset1, sim) = res
@@ -63,7 +65,8 @@ for line in sys.stdin:
         if bins[key]['lower'] <= similarity < bins[key]['upper']:
             if bins[key]['count'] < samples_per_bin:
                 print(line.strip())
-            bins[key]['count'] += 1
+                bins[key]['count'] += 1
+                break
     state = check(bins)
     if state:
         break
