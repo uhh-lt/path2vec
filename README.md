@@ -16,3 +16,17 @@ For example:
 `jcn_brown_thresh01_vsize16_bsize20_lr004     0.2312464827703736`
 
 The resuting score is the Spearman rank correlation between model-produces similarities and human judgments.
+
+# Evaluation with dynamic synset selection
+
+One can also evaluate using dynamic synset selection on the original SimLex test set
+(https://github.com/uhh-lt/shortpath2vec/blob/master/simlex/simlex_original.tsv )
+
+'Dynamic synset selection' here means that the test set contains lemmas, not synsets.
+From all possible WordNet synsets for words A and B in each test set pair, we choose the synset combination which yields
+maximum similarity in the model under evaluation. For example, for the words `weekend` and `week` we choose the synsets
+`weekend.n.01` and `workweek.n.01`, etc.
+
+To evaluate the model this way, use the `evaluate_lemmas.py` script:
+
+`python3 evaluate_lemmas.py MODELFILE simlex/simlex_original.tsv`
