@@ -10,13 +10,14 @@ batchsizes = []
 lrates = []
 wordnet_scores = []
 human_scores = []
+dhuman_scores = []
 
 
 for line in sys.stdin:
     if line.strip().startswith('#'):
         continue
     res = line.strip().split('\t')
-    (corpus, vsize, bsize, lrate, wordnet, human) = res
+    (corpus, vsize, bsize, lrate, wordnet, human, dynamic_human) = res
     # if lrate != '0.001':
     #    continue
     lrates.append(lrate)
@@ -28,11 +29,13 @@ for line in sys.stdin:
     wordnet_scores.append(wordnet)
     human = float(human)
     human_scores.append(human)
+    dhuman = float(dynamic_human)
+    dhuman_scores.append(dhuman)
 
 
-if corpus == 'jcn-semcor':
+if 'jcn-semcor' in corpus:
     graph_score = 0.4874
-elif corpus == 'jcn-brown':
+elif 'jcn-brown' in corpus:
     graph_score = 0.4949
 else:
     graph_score = 0.5134
@@ -42,6 +45,7 @@ diff_bsizes = set(batchsizes)
 vectorsizes = np.array(vectorsizes)
 batchsizes = np.array(batchsizes)
 human_scores = np.array(human_scores)
+dhuman_scores = np.array(dhuman_scores)
 
 plt.figure()
 plt.plot((0, np.max(vectorsizes)), (graph_score, graph_score), 'red', label='Pure WordNet')
@@ -53,7 +57,23 @@ plt.xlabel('Vector size')
 plt.ylabel('Spearman rank correlation on SimLex')
 plt.legend(loc='best')
 plt.grid(True)
-plt.title(corpus)
+plt.title(corpus+' static synsets')
 # plt.show()
-plt.savefig(corpus+'.png', dpi=300)
+plt.savefig(corpus+'_static_synsets.png', dpi=300)
+plt.close()
+
+
+plt.figure()
+plt.plot((0, np.max(vectorsizes)), (graph_score, graph_score), 'red', label='Pure WordNet')
+for batch in sorted(diff_bsizes):
+    x = vectorsizes[batchsizes == batch]
+    y = dhuman_scores[batchsizes == batch]
+    plt.plot(x, y, linestyle='dashed', marker='o', label='Batch size '+str(int(batch)))
+plt.xlabel('Vector size')
+plt.ylabel('Spearman rank correlation on SimLex (dynamic synset selection)')
+plt.legend(loc='best')
+plt.grid(True)
+plt.title(corpus+' dynamic synsets')
+# plt.show()
+plt.savefig(corpus+'_dynamic_synsets.png', dpi=300)
 plt.close()
