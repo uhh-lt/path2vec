@@ -11,11 +11,13 @@ SIMFILE is one of semantic similarity datasets in https://github.com/uhh-lt/shor
 
 For example:
 
-`python3 evaluation.py jcn_brown_thresh01_embeddings_vsize16_bsize20_lr004.vec.gz simlex_synsets/max_jcn_brown_human.tsv`
+`python3 evaluation.py jcn_semcor_thresh01_embeddings_vsize200_bsize100_lr001.vec.gz simlex/simlex_synsets/max_jcn_semcor_human.tsv`
 
-`jcn_brown_thresh01_vsize16_bsize20_lr004     0.2312464827703736`
+`jcn_semcor_thresh01_vsize200_bsize100_lr001     0.46397722955881243     0.4503616841776444`
 
-The resuting score is the Spearman rank correlation between model-produces similarities and human judgments.
+The resuting score (0.464 in the example) is the Spearman rank correlation between model-produced similarities and human judgments.
+The second score (0.450 in the example) is always calculated on the original Simlex with dynamically selected synsets
+(see below for details).
 
 # Evaluation with dynamic synset selection
 

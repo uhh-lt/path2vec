@@ -7,7 +7,7 @@ from nltk.corpus import wordnet as wn
 from itertools import product
 
 
-def evaluate_synsets(emb_model, pairs, delimiter='\t', dummy4unknown=False):
+def evaluate_synsets(emb_model, pairs, logger, delimiter='\t', dummy4unknown=False):
     ok_vocab = [(w, emb_model.vocab[w]) for w in emb_model.index2word]
     ok_vocab = dict(ok_vocab)
 
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     # Pre-calculating vector norms
     model.init_sims(replace=True)
 
-    scores = evaluate_synsets(model, simfile, dummy4unknown=True)
+    scores = evaluate_synsets(model, simfile, logger, dummy4unknown=True)
 
     name = modelfile.replace('_embeddings_', '_')[:-7]
 
