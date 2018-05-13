@@ -18,8 +18,8 @@ for line in sys.stdin:
         continue
     res = line.strip().split('\t')
     (corpus, vsize, bsize, lrate, wordnet, human, dynamic_human) = res
-    # if lrate != '0.001':
-    #    continue
+    if lrate != '0.005':
+        continue
     lrates.append(lrate)
     vsize = float(vsize)
     vectorsizes.append(vsize)
