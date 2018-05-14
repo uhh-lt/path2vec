@@ -20,6 +20,8 @@ for line in sys.stdin:
     (corpus, vsize, bsize, lrate, wordnet, human, dynamic_human) = res
     if lrate != '0.005':
         continue
+    if float(bsize) < 10 or float(bsize) > 400:
+        continue
     lrates.append(lrate)
     vsize = float(vsize)
     vectorsizes.append(vsize)
