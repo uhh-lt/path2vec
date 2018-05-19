@@ -8,12 +8,9 @@ Created on Mon May  7 17:13:25 2018
 import networkx as nx
 from nltk.corpus import wordnet as wn
 from nltk.corpus import wordnet_ic
-from nltk.stem import WordNetLemmatizer
 import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
 import codecs
-import string
-from nltk.corpus import stopwords
 from sklearn.metrics import f1_score, precision_score, recall_score
 import gensim
 
@@ -29,9 +26,6 @@ gold_tags_fpath = 'WSD_Unified_Evaluation_Datasets/senseval2/senseval2.gold.key.
 wn_embedding_fpath = 'jcn-brown-thresh01-near50_embeddings_vsize300_bsize50_lr005.vec'
 
 info_content = wordnet_ic.ic('ic-brown.dat')
-wnlemmatizer = WordNetLemmatizer()
-pywsd_stopwords = [u"'s", u"``", u"`"]
-STOPWORDS = set(stopwords.words('english') + list(string.punctuation) + pywsd_stopwords)
 
 
 def lch_similarity(synset1, synset2):
