@@ -15,10 +15,14 @@ from collections import OrderedDict
 import codecs
 from sklearn.metrics import f1_score, precision_score, recall_score
 import gensim
+import logging
+
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # algorithm parameters
 USE_POS_INFO = True
-USE_JCN = False  # if False, lch is used
+USE_JCN = True  # if False, lch is used
 VECTORIZED_SIMILARITY = False
 USE_PAGERANK = False
 AVG_METHOD = 'micro'
