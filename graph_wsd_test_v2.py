@@ -5,10 +5,11 @@ Created on Mon May  7 17:13:25 2018
 @author: dorgham
 """
 
+import sys
 import networkx as nx
 from nltk.corpus import wordnet as wn
 from nltk.corpus import wordnet_ic
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
 import codecs
 from sklearn.metrics import f1_score, precision_score, recall_score
@@ -16,14 +17,14 @@ import gensim
 
 #algorithm parameters
 USE_POS_INFO = True
-USE_JCN = False  #if False, lch is used
+USE_JCN = True  #if False, lch is used
 VECTORIZED_SIMILARITY = False
 USE_PAGERANK = False
 AVG_METHOD = 'micro'
 MAX_DEPTH = 3
-senseval_fpath = 'WSD_Unified_Evaluation_Datasets/senseval2/senseval2.data.xml'
-gold_tags_fpath = 'WSD_Unified_Evaluation_Datasets/senseval2/senseval2.gold.key.txt'
-wn_embedding_fpath = 'jcn-brown-thresh01-near50_embeddings_vsize300_bsize50_lr005.vec'
+senseval_fpath = 'data/senseval/senseval2/senseval2.data.xml'
+gold_tags_fpath = 'data/senseval/senseval2/senseval2.gold.key.txt'
+wn_embedding_fpath = sys.argv[1]
 
 info_content = wordnet_ic.ic('ic-brown.dat')
 
@@ -151,10 +152,10 @@ def sentence_wsd(ids_list, sentences, poses):
          #   G.node[node]['weight']=node_scores[node]
         
         counter += 1
-        if counter==1: #draw the graph of the first sentence
-            plt.close()
-            nx.draw(G, pos=G_pos, with_labels = True)
-            plt.show()
+        #if counter==1: #draw the graph of the first sentence
+        #    plt.close()
+        #    nx.draw(G, pos=G_pos, with_labels = True)
+        #    plt.show()
         G.clear()
     
     return output_dict
