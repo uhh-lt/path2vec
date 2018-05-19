@@ -18,7 +18,7 @@ import gensim
 
 # algorithm parameters
 USE_POS_INFO = True
-USE_JCN = True  # if False, lch is used
+USE_JCN = False  # if False, lch is used
 VECTORIZED_SIMILARITY = False
 USE_PAGERANK = False
 AVG_METHOD = 'micro'
@@ -204,8 +204,8 @@ if __name__ == "__main__":
         id_key_pair = line.split()
         predicted_keys = disambiguated[id_key_pair[0]].split(';')
         gold_keys_set = set(id_key_pair[1:])
-        predected_keys_set = set(predicted_keys)
-        if len(predected_keys_set.intersection(gold_keys_set)) > 0:
+        predicted_keys_set = set(predicted_keys)
+        if len(predicted_keys_set.intersection(gold_keys_set)) > 0:
             wsd_output.append(predicted_keys[0])
             gold_output.append(predicted_keys[0])
         else:
