@@ -1,0 +1,11 @@
+embeddings/lch-near50/lch-thresh15-near50_embeddings_vsize100_bsize100_lr005.vec.gz	F-score: 0.5316   Precision: 0.5316   Recall: 0.5316
+embeddings/lch-near50/lch-thresh15-near50_embeddings_vsize100_bsize20_lr005.vec.gz	F-score: 0.5294   Precision: 0.5294   Recall: 0.5294
+embeddings/lch-near50/lch-thresh15-near50_embeddings_vsize100_bsize50_lr005.vec.gz	F-score: 0.5289   Precision: 0.5289   Recall: 0.5289
+embeddings/lch-near50/lch-thresh15-near50_embeddings_vsize200_bsize100_lr005.vec.gz	F-score: 0.5267   Precision: 0.5267   Recall: 0.5267
+embeddings/lch-near50/lch-thresh15-near50_embeddings_vsize200_bsize20_lr005.vec.gz	F-score: 0.5359   Precision: 0.5359   Recall: 0.5359
+embeddings/lch-near50/lch-thresh15-near50_embeddings_vsize200_bsize50_lr005.vec.gz	F-score: 0.5202   Precision: 0.5202   Recall: 0.5202
+embeddings/lch-near50/lch-thresh15-near50_embeddings_vsize300_bsize100_lr001.vec.gz	F-score: 0.5250   Precision: 0.5250   Recall: 0.5250
+embeddings/lch-near50/lch-thresh15-near50_embeddings_vsize300_bsize100_lr005.vec.gz	F-score: 0.5355   Precision: 0.5355   Recall: 0.5355
+embeddings/lch-near50/lch-thresh15-near50_embeddings_vsize300_bsize20_lr005.vec.gz	F-score: 0.5403   Precision: 0.5403   Recall: 0.5403
+embeddings/lch-near50/lch-thresh15-near50_embeddings_vsize300_bsize50_lr001.vec.gz	F-score: 0.5346   Precision: 0.5346   Recall: 0.5346
+embeddings/lch-near50/lch-thresh15-near50_embeddings_vsize300_bsize50_lr005.vec.gz	F-score: 0.5364   Precision: 0.5364   Recall: 0.5364

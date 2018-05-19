@@ -1,0 +1,5 @@
+embeddings/lch-near100/lch-thresh15-near100_embeddings_vsize300_bsize100_lr001.vec.gz	F-score: 0.5302   Precision: 0.5302   Recall: 0.5302
+embeddings/lch-near100/lch-thresh15-near100_embeddings_vsize300_bsize100_lr005.vec.gz	F-score: 0.5403   Precision: 0.5403   Recall: 0.5403
+embeddings/lch-near100/lch-thresh15-near100_embeddings_vsize300_bsize20_lr005.vec.gz	F-score: 0.5320   Precision: 0.5320   Recall: 0.5320
+embeddings/lch-near100/lch-thresh15-near100_embeddings_vsize300_bsize50_lr001.vec.gz	F-score: 0.5351   Precision: 0.5351   Recall: 0.5351
+embeddings/lch-near100/lch-thresh15-near100_embeddings_vsize300_bsize50_lr005.vec.gz	F-score: 0.5355   Precision: 0.5355   Recall: 0.5355

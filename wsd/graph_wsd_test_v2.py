@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # algorithm parameters
 USE_POS_INFO = True
 USE_JCN = True  # if False, lch is used
-VECTORIZED_SIMILARITY = False
+VECTORIZED_SIMILARITY = True
 USE_PAGERANK = False
 AVG_METHOD = 'micro'
 MAX_DEPTH = 3
