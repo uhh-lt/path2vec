@@ -11,6 +11,7 @@ from nltk.corpus import wordnet as wn
 from nltk.corpus import wordnet_ic
 # import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ElementTree
+from collections import OrderedDict
 import codecs
 from sklearn.metrics import f1_score, precision_score, recall_score
 import gensim
@@ -56,13 +57,13 @@ def sentence_wsd(ids_list, sentences, poses):
     else:
         model = None
     counter = 0
-    output_dict = dict()
+    output_dict = OrderedDict()
     for index, sentence_ids in enumerate(ids_list):
         graph = nx.Graph()
         sent_len = len(sentence_ids)
         graph_pos = dict()  # used for aligning the nodes when drawing the graph
         pos_idx = 1
-        token_node_names_map = dict()
+        token_node_names_map = OrderedDict()
         pos_list = poses[index]
         sentence = sentences[index]
 
@@ -88,7 +89,7 @@ def sentence_wsd(ids_list, sentences, poses):
                 pos_idx += 1
 
         # compute word similarity
-        sim_dict = dict()
+        sim_dict = OrderedDict()
         for idx, key in enumerate(sentence_ids):
             if USE_POS_INFO:
                 wn_pos = convert_to_wordnet_pos(pos_list[idx])
