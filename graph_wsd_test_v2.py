@@ -11,7 +11,6 @@ from nltk.corpus import wordnet_ic
 from nltk.stem import WordNetLemmatizer
 import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
-from collections import OrderedDict
 import codecs
 import string
 from nltk.corpus import stopwords
@@ -20,8 +19,8 @@ import gensim
 
 #algorithm parameters
 USE_POS_INFO = True
-USE_JCN = True  #if False, use lch
-VECTORIZED_SIMILARITY = True
+USE_JCN = False  #if False, lch is used
+VECTORIZED_SIMILARITY = False
 USE_PAGERANK = False
 AVG_METHOD = 'micro'
 MAX_DEPTH = 3
@@ -54,27 +53,28 @@ def convert_to_wordnet_pos(senseval_pos):
     else:
         return None
 
-def sentence_wsd(sentences, poses):
+def sentence_wsd(ids_list, sentences, poses):
     if VECTORIZED_SIMILARITY:
         model = gensim.models.KeyedVectors.load_word2vec_format(wn_embedding_fpath, binary=False)
     counter=0
     output_dict = dict()
-    for sentence in sentences:
+    for index, sentence_ids in enumerate(ids_list):
         G=nx.Graph()
-        sent_len = len(sentence.keys())
+        sent_len = len(sentence_ids)
         G_pos = dict()  #used for aligning the nodes when drawing the graph
         pos_idx=1
         token_nodeNames_map = dict()
-        pos_dict = poses[counter]
+        pos_list = poses[index]
+        sentence = sentences[index]
         
         #construct the nodes of the graph
-        for i, _id in enumerate(sentence.keys()):
+        for i, _id in enumerate(sentence_ids):
             if USE_POS_INFO:  #restrict the retrieved snysets from wordnet to the target pos
-                wn_pos = convert_to_wordnet_pos(pos_dict[_id])
+                wn_pos = convert_to_wordnet_pos(pos_list[i])
             else:
                 wn_pos = None
                 
-            synsets_list = list(wn.synsets(sentence[_id], pos=wn_pos))
+            synsets_list = list(wn.synsets(sentence[i], pos=wn_pos))
             if len(synsets_list) > 0:
                 node_names = []
                 for synset in synsets_list:
@@ -89,24 +89,22 @@ def sentence_wsd(sentences, poses):
                 pos_idx+=1
         
         #compute word similarity
-        ids_list = list(sentence.keys())
         sim_dict = dict()
-        #print sentence.values()
-        for idx, key in enumerate(ids_list):
+        for idx, key in enumerate(sentence_ids):
             if USE_POS_INFO:
-                wn_pos = convert_to_wordnet_pos(pos_dict[ids_list[idx]])
+                wn_pos = convert_to_wordnet_pos(pos_list[idx])
             else:
                 wn_pos = None
-            synsets_list = list(wn.synsets(sentence[ids_list[idx]], pos=wn_pos))
+            synsets_list = list(wn.synsets(sentence[idx], pos=wn_pos))
             if len(synsets_list) > 0:
                 i = 1
                 while i<=MAX_DEPTH and idx+i<sent_len:
                     if USE_POS_INFO:
-                        wn_pos = convert_to_wordnet_pos(pos_dict[ids_list[idx+i]])
+                        wn_pos = convert_to_wordnet_pos(pos_list[idx+i])
                     else:
                         wn_pos = None
                         
-                    next_synsets_list = list(wn.synsets(sentence[ids_list[idx+i]], pos=wn_pos))
+                    next_synsets_list = list(wn.synsets(sentence[idx+i], pos=wn_pos))
                     if len(next_synsets_list) > 0:
                         for current_synset in synsets_list:
                             for neighbor_synset in next_synsets_list:
@@ -135,7 +133,7 @@ def sentence_wsd(sentences, poses):
         else:
             node_scores = G.degree(G.nodes(), "weight")
         
-        for token_id in ids_list:
+        for token_id in sentence_ids:
             nodeNames = token_nodeNames_map.get(token_id)
             scores = []
             max_label = ""
@@ -169,8 +167,10 @@ def sentence_wsd(sentences, poses):
 
 
 def load_senseval_data(file_path):
-    tokens_dict = OrderedDict()
-    pos_dict = OrderedDict()
+    ids = []
+    tokens = []
+    pos = []
+    all_ids = []
     sentences = []
     pos_list = []
     tree = ET.parse(file_path)
@@ -179,21 +179,24 @@ def load_senseval_data(file_path):
         for sentence in text:
             for word in sentence:
                 if word.tag == 'instance' and word.attrib['id']: #only include words with the <instance> tag
-                    tokens_dict[word.attrib['id']] = word.text
-                    pos_dict[word.attrib['id']] = word.attrib['pos']
-            if tokens_dict:
-                sentences.append(tokens_dict)
-                pos_list.append(pos_dict)
-                tokens_dict = dict()
-                pos_dict = dict()
+                    ids.append(word.attrib['id'])
+                    tokens.append(word.text)
+                    pos.append(word.attrib['pos'])
+            if tokens:
+                all_ids.append(ids)
+                sentences.append(tokens)
+                pos_list.append(pos)
+                ids = []
+                tokens = []
+                pos = []
             
-    return sentences, pos_list
+    return all_ids, sentences, pos_list
 
 
 
 if __name__ == "__main__":
-    sents, poses = load_senseval_data(senseval_fpath)
-    output_dict = sentence_wsd(sents, poses)
+    ids, sents, poses = load_senseval_data(senseval_fpath)
+    output_dict = sentence_wsd(ids, sents, poses)
     #load the gold results
     with codecs.open(gold_tags_fpath, 'r', 'utf-8') as f:
         lines = f.readlines()
@@ -221,3 +224,4 @@ if __name__ == "__main__":
         
         
         
+
