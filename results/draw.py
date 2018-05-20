@@ -12,7 +12,6 @@ wordnet_scores = []
 human_scores = []
 dhuman_scores = []
 
-
 for line in sys.stdin:
     if line.strip().startswith('#'):
         continue
@@ -34,7 +33,6 @@ for line in sys.stdin:
     dhuman = float(dynamic_human)
     dhuman_scores.append(dhuman)
 
-
 if 'jcn-semcor' in corpus:
     graph_score = 0.4874
 elif 'jcn-brown' in corpus:
@@ -54,28 +52,29 @@ plt.plot((0, np.max(vectorsizes)), (graph_score, graph_score), 'red', label='Pur
 for batch in sorted(diff_bsizes):
     x = vectorsizes[batchsizes == batch]
     y = human_scores[batchsizes == batch]
-    plt.plot(x, y, linestyle='dashed', marker='o', label='Batch size '+str(int(batch)))
+    plt.plot(x, y, linestyle='dashed', marker='o',
+             label='Deepwalk' if int(batch) == 166 else 'Batch size ' + str(int(batch)))
 plt.xlabel('Vector size')
 plt.ylabel('Spearman rank correlation on SimLex999')
 plt.legend(loc='best')
 plt.grid(True)
 plt.title('Models performance in semantic similarity, static synsets')
 # plt.show()
-plt.savefig(corpus+'_static_synsets.png', dpi=300)
+plt.savefig(corpus + '_static_synsets.png', dpi=300)
 plt.close()
-
 
 plt.figure()
 plt.plot((0, np.max(vectorsizes)), (graph_score, graph_score), 'red', label='Pure WordNet')
 for batch in sorted(diff_bsizes):
     x = vectorsizes[batchsizes == batch]
     y = dhuman_scores[batchsizes == batch]
-    plt.plot(x, y, linestyle='dashed', marker='o', label='Batch size '+str(int(batch)))
+    plt.plot(x, y, linestyle='dashed', marker='o',
+             label='Deepwalk' if int(batch) == 166 else 'Batch size ' + str(int(batch)))
 plt.xlabel('Vector size')
 plt.ylabel('Spearman rank correlation on SimLex999')
 plt.legend(loc='best')
 plt.grid(True)
 plt.title('Models performance in semantic similarity, dynamic synsets')
 # plt.show()
-plt.savefig(corpus+'_dynamic_synsets.png', dpi=300)
+plt.savefig(corpus + '_dynamic_synsets.png', dpi=300)
 plt.close()
