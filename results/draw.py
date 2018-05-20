@@ -20,7 +20,7 @@ for line in sys.stdin:
     (corpus, vsize, bsize, lrate, wordnet, human, dynamic_human) = res
     if lrate != '0.005':
         continue
-    if float(bsize) < 10 or float(bsize) > 400:
+    if float(bsize) < 20 or float(bsize) > 400 or float(bsize) == 25:
         continue
     lrates.append(lrate)
     vsize = float(vsize)
@@ -56,10 +56,10 @@ for batch in sorted(diff_bsizes):
     y = human_scores[batchsizes == batch]
     plt.plot(x, y, linestyle='dashed', marker='o', label='Batch size '+str(int(batch)))
 plt.xlabel('Vector size')
-plt.ylabel('Spearman rank correlation on SimLex')
+plt.ylabel('Spearman rank correlation on SimLex999')
 plt.legend(loc='best')
 plt.grid(True)
-plt.title(corpus+' static synsets')
+plt.title('Models performance in semantic similarity, static synsets')
 # plt.show()
 plt.savefig(corpus+'_static_synsets.png', dpi=300)
 plt.close()
@@ -72,10 +72,10 @@ for batch in sorted(diff_bsizes):
     y = dhuman_scores[batchsizes == batch]
     plt.plot(x, y, linestyle='dashed', marker='o', label='Batch size '+str(int(batch)))
 plt.xlabel('Vector size')
-plt.ylabel('Spearman rank correlation on SimLex (dynamic synset selection)')
+plt.ylabel('Spearman rank correlation on SimLex999')
 plt.legend(loc='best')
 plt.grid(True)
-plt.title(corpus+' dynamic synsets')
+plt.title('Models performance in semantic similarity, dynamic synsets')
 # plt.show()
 plt.savefig(corpus+'_dynamic_synsets.png', dpi=300)
 plt.close()

@@ -40,7 +40,6 @@ if __name__ == '__main__':
     print('Method:', method, file=sys.stderr)
     print('Corpus:', corpus, file=sys.stderr)
     print('Cores:', cores, file=sys.stderr)
-    exit()
 
     print('Calculating total number of pairs...', file=sys.stderr)
     pairs = factorial(len(synsets)) // factorial(2) // factorial(len(synsets) - 2)
