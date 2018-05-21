@@ -52,8 +52,13 @@ plt.plot((0, np.max(vectorsizes)), (graph_score, graph_score), 'red', label='Pur
 for batch in sorted(diff_bsizes):
     x = vectorsizes[batchsizes == batch]
     y = human_scores[batchsizes == batch]
-    plt.plot(x, y, linestyle='dashed', marker='o',
-             label='Deepwalk' if int(batch) == 166 else 'Batch size ' + str(int(batch)))
+    if int(batch) == 166:
+        label = 'Deepwalk'
+    elif int(batch) == 366:
+        label = 'node2vec'
+    else:
+        label = 'Batch size ' + str(int(batch))
+    plt.plot(x, y, linestyle='dashed', marker='o', label=label)
 plt.xlabel('Vector size')
 plt.ylabel('Spearman rank correlation on SimLex999')
 plt.legend(loc='best')
@@ -68,8 +73,13 @@ plt.plot((0, np.max(vectorsizes)), (graph_score, graph_score), 'red', label='Pur
 for batch in sorted(diff_bsizes):
     x = vectorsizes[batchsizes == batch]
     y = dhuman_scores[batchsizes == batch]
-    plt.plot(x, y, linestyle='dashed', marker='o',
-             label='Deepwalk' if int(batch) == 166 else 'Batch size ' + str(int(batch)))
+    if int(batch) == 166:
+        label = 'Deepwalk'
+    elif int(batch) == 366:
+        label = 'node2vec'
+    else:
+        label = 'Batch size ' + str(int(batch))
+    plt.plot(x, y, linestyle='dashed', marker='o', label=label)
 plt.xlabel('Vector size')
 plt.ylabel('Spearman rank correlation on SimLex999')
 plt.legend(loc='best')
