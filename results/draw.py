@@ -57,7 +57,7 @@ for batch in sorted(diff_bsizes):
     elif int(batch) == 366:
         label = 'node2vec'
     else:
-        label = 'Batch size ' + str(int(batch))
+        label = 'path2vec, batch ' + str(int(batch))
     plt.plot(x, y, linestyle='dashed', marker='o', label=label)
 plt.xlabel('Vector size')
 plt.ylabel('Spearman rank correlation on SimLex999')
@@ -78,7 +78,7 @@ for batch in sorted(diff_bsizes):
     elif int(batch) == 366:
         label = 'node2vec'
     else:
-        label = 'Batch size ' + str(int(batch))
+        label = 'path2vec, batch ' + str(int(batch))
     plt.plot(x, y, linestyle='dashed', marker='o', label=label)
 plt.xlabel('Vector size')
 plt.ylabel('Spearman rank correlation on SimLex999')

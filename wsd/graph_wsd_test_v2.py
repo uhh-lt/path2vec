@@ -16,6 +16,7 @@ import codecs
 from sklearn.metrics import f1_score, precision_score, recall_score
 import gensim
 import logging
+from hamming_cython import hamming_sum
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -32,6 +33,25 @@ gold_tags_fpath = 'data/senseval/senseval2/senseval2.gold.key.txt'
 wn_embedding_fpath = sys.argv[1]
 
 info_content = wordnet_ic.ic('ic-brown.dat')
+
+
+def load_fse(path):
+    model = {}
+    for f_line in gensim.utils.smart_open(path):
+        f_line = gensim.utils.to_unicode(f_line)
+        res = f_line.strip().split('\t')
+        (synset, vector) = res
+        model[synset] = vector
+    return model
+
+
+def hamming_distance(pair, vec_dic):
+    s0 = vec_dic[pair[0]]
+    s1 = vec_dic[pair[1]]
+    if len(s0) != len(s1):
+        raise ValueError()
+    distance = hamming_sum(s0, s1) + 0.00001
+    return 1 / distance
 
 
 def lch_similarity(synset1, synset2):
@@ -57,7 +77,10 @@ def convert_to_wordnet_pos(senseval_pos):
 
 def sentence_wsd(ids_list, sentences, poses):
     if VECTORIZED_SIMILARITY:
-        model = gensim.models.KeyedVectors.load_word2vec_format(wn_embedding_fpath, binary=False)
+        if 'fse' in wn_embedding_fpath:
+            model = load_fse(wn_embedding_fpath)
+        else:
+            model = gensim.models.KeyedVectors.load_word2vec_format(wn_embedding_fpath, binary=False)
     else:
         model = None
     counter = 0
@@ -116,8 +139,12 @@ def sentence_wsd(ids_list, sentences, poses):
                                 nodes += str(idx + i) + ' ' + neighbor_synset.name()
                                 if current_synset.pos() == 'n' and neighbor_synset.pos() == 'n':
                                     if VECTORIZED_SIMILARITY:
-                                        sim_dict[nodes] = model.wv.similarity(current_synset.name(),
-                                                                              neighbor_synset.name())
+                                        if 'fse' in wn_embedding_fpath:
+                                            sim_dict[nodes] = hamming_distance(
+                                                (current_synset.name(), neighbor_synset.name()), model)
+                                        else:
+                                            sim_dict[nodes] = model.wv.similarity(current_synset.name(),
+                                                                                  neighbor_synset.name())
                                     else:
                                         if USE_JCN:
                                             sim_dict[nodes] = jcn_similarity(current_synset, neighbor_synset)
