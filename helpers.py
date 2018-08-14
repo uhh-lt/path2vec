@@ -11,7 +11,32 @@ from keras.preprocessing.sequence import skipgrams
 from gensim import utils
 import json
 import time
+from nltk.corpus import wordnet as wn
 
+
+neighbors_dict = dict()
+
+def build_connections(vocab_dict):
+    global neighbors_dict
+    neighbor_nodes = []
+    for vocab, index in vocab_dict.items():
+        if len(vocab.lower().rsplit('.', 2)) != 3:
+            continue
+        synset = wn.synset(vocab)
+        hypernyms = synset.hypernyms()
+        hyponyms = synset.hyponyms()
+        
+        for hypernym in hypernyms:
+            if vocab_dict[hypernym.name()]:
+                neighbor_nodes.append(vocab_dict[hypernym.name()])
+        for hyponym in hyponyms:
+            if vocab_dict[hyponym.name()]:
+                neighbor_nodes.append(vocab_dict[hyponym.name()])
+        
+        neighbors_dict[index] = neighbor_nodes
+        neighbor_nodes = []
+    
+    return neighbors_dict
 
 class Wordpairs(object):
     """
@@ -84,7 +109,8 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size):
         samples_per_batch = samples_per_pair * batch_size  # How many samples will be there in each batch
 
         # Batch should be a tuple of inputs and targets. First we create it empty:
-        batch = ([np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)],
+        batch = ([np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int),
+                  np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)],
                  np.zeros((samples_per_batch, 1)))
         inst_counter = 0
         start = time.time()
@@ -101,6 +127,16 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size):
 
             current_word_index = sent_seq[0]
             context_word_index = sent_seq[1]
+            c_w_neighbors = neighbors_dict[current_word_index]
+            if c_w_neighbors:
+                neighbor_1 = c_w_neighbors[0]
+            else:
+                neighbor_1 = 0      #UNK for nodes without neighbors
+            c_w_neighbors = neighbors_dict[context_word_index]
+            if c_w_neighbors:
+                neighbor_2 = c_w_neighbors[0]
+            else:
+                neighbor_2 = 0      #UNK for nodes without neighbors
 
             # get negative samples for the current pair
             neg_samples = get_negative_samples(current_word_index, context_word_index, vocab_size, nsize)
@@ -109,6 +145,8 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size):
             for i in range(samples_per_pair):
                 batch[0][0][inst_counter] = neg_samples[0][i][0]
                 batch[0][1][inst_counter] = neg_samples[0][i][1]
+                batch[0][2][inst_counter] = neighbor_1
+                batch[0][3][inst_counter] = neighbor_2
                 pred_sim = neg_samples[1][i]
                 if pred_sim != 0:  # if this is a positive example, replace 1 with the real similarity from the file
                     pred_sim = sim
@@ -120,7 +158,8 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size):
                 if timing:
                     print('Batch generation took', end - start, file=sys.stderr)
                 inst_counter = 0
-                batch = ([np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)],
+                batch = ([np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int),
+                          np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)],
                          np.zeros((samples_per_batch, 1)))
                 start = time.time()
 

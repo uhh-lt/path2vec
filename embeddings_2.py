@@ -12,59 +12,34 @@ from keras import backend
 from keras.callbacks import TensorBoard, EarlyStopping
 from helpers import *
 from tensorflow.python.client import device_lib
-from nltk.corpus import wordnet as wn
 import numpy as np
 import tensorflow as tf
 import keras.backend as K
+import random as rn
+
+
+np.random.seed(42)
+rn.seed(12345)
+session_conf = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)
+tf.set_random_seed(2)
+sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
+K.set_session(sess)
 
 
 print(device_lib.list_local_devices())
-neighbors_dict = dict()
 
-def build_connections(vocab_dict):
-    neighbors_dict = dict()
-    neighbor_nodes = []
-    for vocab, index in vocab_dict.items():
-        if len(vocab.lower().rsplit('.', 2)) != 3:
-            continue
-        synset = wn.synset(vocab)
-        hypernyms = synset.hypernyms()
-        hyponyms = synset.hyponyms()
-        
-        for hypernym in hypernyms:
-            if vocab_dict[hypernym.name()]:
-                neighbor_nodes.append(vocab_dict[hypernym.name()])
-        for hyponym in hyponyms:
-            if vocab_dict[hyponym.name()]:
-                neighbor_nodes.append(vocab_dict[hyponym.name()])
-        
-        neighbors_dict[index] = neighbor_nodes
-        neighbor_nodes = []
     
-    return neighbors_dict
+def myLoss(reg_1_output, reg_2_output):
+    def customLoss(y_true, y_pred):
+        beta = 10e-7
+        gamma = 10e-7
+        alpha = 1 - (beta+gamma)
+        m_loss = alpha * K.mean(K.square(y_pred - y_true), axis=-1)
+        m_loss += beta * reg_1_output
+        m_loss += gamma * reg_2_output
     
-def customLoss(y_true, y_pred):
-    m_loss = K.mean(K.square(y_pred - y_true), axis=-1)
-    in0_unpacked = tf.unstack(keras_model.inputs[0])
-    for t in in0_unpacked:
-        nbr_list = neighbors_dict[K.eval(t)]
-        prdction=0
-        for nbr in nbr_list:
-            nbr = K.placeholder([nbr], dtype='int32')
-            prdction += validation_model.predict([t, nbr])
-    m_loss += 10e-7 * prdction
-    
-    in1_unpacked = tf.unstack(keras_model.inputs[1])
-    for t in in1_unpacked:
-        nbr_list = neighbors_dict[K.eval(t)]
-        prdction=0
-        for nbr in nbr_list:
-            nbr = K.placeholder([nbr], dtype='int32')
-            prdction += validation_model.predict([t, nbr])
-    m_loss += 10e-7 * prdction
-    
-    return m_loss
-
+        return m_loss
+    return customLoss
 
 # This script trains word embeddings on pairs of words and their similarities.
 # A possible source of such data is Wordnet and its shortest paths.
@@ -133,6 +108,8 @@ valid_examples = ['measure.n.02', 'fundamental_quantity.n.01', 'person.n.01', 'l
 # Model has 2 inputs: current word index, context word index
 word_index = Input(shape=(1,), name='Word', dtype='int32')
 context_index = Input(shape=(1,), name='Context', dtype='int32')
+neighbor_index_1 = Input(shape=(1,), name='Context', dtype='int32')
+neighbor_index_2 = Input(shape=(1,), name='Context', dtype='int32')
 
 # For now, let's use Keras defaults for initialization:
 word_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1, name='Word_embeddings')
@@ -142,34 +119,37 @@ word_embedding = word_embedding_layer(word_index)
 word_embedding = Flatten(name='word_vector')(word_embedding)  # Some Keras black magic for reshaping
 context_embedding = word_embedding_layer(context_index)
 context_embedding = Flatten(name='context_vector')(context_embedding)  # Some Keras black magic for reshaping
+neighbor_embedding_1 = word_embedding_layer(neighbor_index_1)
+neighbor_embedding_1 = Flatten(name='neighbor_vector')(neighbor_embedding_1)
+neighbor_embedding_2 = word_embedding_layer(neighbor_index_2)
+neighbor_embedding_2 = Flatten(name='neighbor_vector')(neighbor_embedding_2)
 
 # The current word embedding is multiplied (dot product) with the context word embedding
 # TODO: what about negative dot products? Insert sigmoid...?
 word_context_product = dot([word_embedding, context_embedding], axes=1, normalize=True, name='word2context')
 
+# create a secondary validation model to run our similarity checks during training
+similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
+validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
+
+reg_output_1 = dot([word_embedding, neighbor_embedding_1], axes=1, normalize=True)
+#reg_model_1 = Model(inputs=[word_index, neighbor_index_1], outputs=[reg_output_1])
+reg_output_2 = dot([context_embedding, neighbor_embedding_2], axes=1, normalize=True)
+#reg_model_2 = Model(inputs=[context_index, neighbor_index_2], outputs=[reg_output_2])
+
 # Creating the model itself...
-keras_model = Model(inputs=[word_index, context_index], outputs=[word_context_product])
+keras_model = Model(inputs=[word_index, context_index, neighbor_index_1, neighbor_index_2], outputs=[word_context_product])
 
 # Assigning attributes:
 keras_model.vexamples = valid_examples
 keras_model.ivocab = vocab_list
 keras_model.vsize = vocab_size
 
-# create a secondary validation model to run our similarity checks during training
-word_index_v = Input(shape=(1,), name='Word_v', dtype='int32')
-context_index_v = Input(shape=(1,), name='Context_v', dtype='int32')
-word_embedding_v = word_embedding_layer(word_index_v)
-word_embedding_v = Flatten(name='word_vector')(word_embedding_v)  
-context_embedding_v = word_embedding_layer(context_index_v)
-context_embedding_v = Flatten(name='context_vector')(context_embedding_v) 
-similarity = dot([word_embedding_v, context_embedding_v], axes=1, normalize=True)
-validation_model = Model(inputs=[word_index_v, context_index_v], outputs=[similarity])
-
 # TODO:  increase the batch size during training, as in https://openreview.net/pdf?id=B1Yy1BxCZ ?
 
 adam = optimizers.Adam(lr=learn_rate)
 
-keras_model.compile(optimizer=adam, loss=customLoss, metrics=['mse'])
+keras_model.compile(optimizer=adam, loss=myLoss(reg_output_1, reg_output_2), metrics=['mse'])
 
 print(keras_model.summary())
 print('Batch size:', batch_size)
