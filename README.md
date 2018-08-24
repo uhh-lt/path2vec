@@ -1,5 +1,5 @@
-# vector-paths
-Learning to represent shortest paths with graph embeddings
+# path2vec
+Learning to represent shortest paths and other graph-based measures of node similarities with graph embeddings
 
 # Models evaluation
 
