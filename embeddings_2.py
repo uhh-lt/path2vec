@@ -26,17 +26,20 @@ sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
 K.set_session(sess)
 
 
-print(device_lib.list_local_devices())
+Neighbors_count = 3
+
+#print(device_lib.list_local_devices())
 
     
 def myLoss(reg_1_output, reg_2_output):
     def customLoss(y_true, y_pred):
-        beta = 10e-7
-        gamma = 10e-7
+        beta = 10e-3
+        gamma = 10e-3
         alpha = 1 - (beta+gamma)
         m_loss = alpha * K.mean(K.square(y_pred - y_true), axis=-1)
-        m_loss += beta * reg_1_output
-        m_loss += gamma * reg_2_output
+        
+        m_loss -= beta * (sum(reg_1_output) / float(len(reg_1_output)))
+        m_loss -= gamma * (sum(reg_2_output) / float(len(reg_2_output)))
     
         return m_loss
     return customLoss
@@ -108,8 +111,14 @@ valid_examples = ['measure.n.02', 'fundamental_quantity.n.01', 'person.n.01', 'l
 # Model has 2 inputs: current word index, context word index
 word_index = Input(shape=(1,), name='Word', dtype='int32')
 context_index = Input(shape=(1,), name='Context', dtype='int32')
-neighbor_index_1 = Input(shape=(1,), name='Context', dtype='int32')
-neighbor_index_2 = Input(shape=(1,), name='Context', dtype='int32')
+
+w_neighbors_indices = []
+c_neighbors_indices = []
+
+for n in range(Neighbors_count):
+    w_neighbors_indices.append(Input(shape=(1,), dtype='int32'))
+    c_neighbors_indices.append(Input(shape=(1,), dtype='int32'))
+
 
 # For now, let's use Keras defaults for initialization:
 word_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1, name='Word_embeddings')
@@ -119,10 +128,12 @@ word_embedding = word_embedding_layer(word_index)
 word_embedding = Flatten(name='word_vector')(word_embedding)  # Some Keras black magic for reshaping
 context_embedding = word_embedding_layer(context_index)
 context_embedding = Flatten(name='context_vector')(context_embedding)  # Some Keras black magic for reshaping
-neighbor_embedding_1 = word_embedding_layer(neighbor_index_1)
-neighbor_embedding_1 = Flatten(name='neighbor_vector')(neighbor_embedding_1)
-neighbor_embedding_2 = word_embedding_layer(neighbor_index_2)
-neighbor_embedding_2 = Flatten(name='neighbor_vector')(neighbor_embedding_2)
+w_neighbor_embeds = []
+c_neighbor_embeds = []
+for n in range(Neighbors_count):
+    w_neighbor_embeds.append(Flatten()(word_embedding_layer(w_neighbors_indices[n])))
+    c_neighbor_embeds.append(Flatten()(word_embedding_layer(c_neighbors_indices[n])))
+
 
 # The current word embedding is multiplied (dot product) with the context word embedding
 # TODO: what about negative dot products? Insert sigmoid...?
@@ -132,13 +143,19 @@ word_context_product = dot([word_embedding, context_embedding], axes=1, normaliz
 similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
 validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
 
-reg_output_1 = dot([word_embedding, neighbor_embedding_1], axes=1, normalize=True)
-#reg_model_1 = Model(inputs=[word_index, neighbor_index_1], outputs=[reg_output_1])
-reg_output_2 = dot([context_embedding, neighbor_embedding_2], axes=1, normalize=True)
-#reg_model_2 = Model(inputs=[context_index, neighbor_index_2], outputs=[reg_output_2])
+reg1_output = []
+reg2_output = []
+for n in range(Neighbors_count):
+    reg1_output.append(dot([word_embedding, w_neighbor_embeds[n]], axes=1, normalize=True))
+    reg2_output.append(dot([context_embedding, c_neighbor_embeds[n]], axes=1, normalize=True))
 
+inputs_list = [word_index, context_index]
+for i in range(Neighbors_count):
+    inputs_list.append(w_neighbors_indices[i])
+for i in range(Neighbors_count):
+    inputs_list.append(c_neighbors_indices[i])
 # Creating the model itself...
-keras_model = Model(inputs=[word_index, context_index, neighbor_index_1, neighbor_index_2], outputs=[word_context_product])
+keras_model = Model(inputs= inputs_list, outputs=[word_context_product])
 
 # Assigning attributes:
 keras_model.vexamples = valid_examples
@@ -149,7 +166,7 @@ keras_model.vsize = vocab_size
 
 adam = optimizers.Adam(lr=learn_rate)
 
-keras_model.compile(optimizer=adam, loss=myLoss(reg_output_1, reg_output_2), metrics=['mse'])
+keras_model.compile(optimizer=adam, loss=myLoss(reg1_output, reg2_output), metrics=['mse'])
 
 print(keras_model.summary())
 print('Batch size:', batch_size)
@@ -167,7 +184,7 @@ steps = no_train_pairs / batch_size  # How many times per epoch we will ask the 
 
 # Let's start training!
 start = time.time()
-history = keras_model.fit_generator(batch_generator(wordpairs, vocab_dict, vocab_size, negative, batch_size),
+history = keras_model.fit_generator(batch_generator(wordpairs, vocab_dict, vocab_size, negative, batch_size, Neighbors_count),
                                     callbacks=[sim_cb, loss_plot, earlystopping], steps_per_epoch=steps, epochs=10,
                                     workers=cores, verbose=1)
 
