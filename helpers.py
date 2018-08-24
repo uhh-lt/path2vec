@@ -91,7 +91,7 @@ def build_vocabulary(pairs):
     return train_pairs, vocabulary, inv_vocab
 
 
-def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, Neighbors_count):
+def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, neighbors_count=0):
     """
     Generates training batches
     """
@@ -109,7 +109,7 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, Neighbors_
         samples_per_batch = samples_per_pair * batch_size  # How many samples will be there in each batch
 
         inputs_list = [np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)]
-        for n in range(Neighbors_count*2):
+        for n in range(neighbors_count*2):
             inputs_list.append(np.zeros((samples_per_batch, 1), dtype=int))
         # Batch should be a tuple of inputs and targets. First we create it empty:
         batch = (inputs_list, np.zeros((samples_per_batch, 1)))
@@ -128,12 +128,12 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, Neighbors_
 
             current_word_index = sent_seq[0]
             context_word_index = sent_seq[1]
-            
-            w_neighbors = neighbors_dict[current_word_index]
-            c_neighbors = neighbors_dict[context_word_index]
-            w_nbrs = []
-            c_nbrs = []
-            for n in range(Neighbors_count):
+            if neighbors_count > 0:
+                w_neighbors = neighbors_dict[current_word_index]
+                c_neighbors = neighbors_dict[context_word_index]
+                w_nbrs = []
+                c_nbrs = []
+            for n in range(neighbors_count):
                 if w_neighbors and len(w_neighbors) > n:
                     w_nbrs.append(w_neighbors[n])
                 else:
@@ -151,10 +151,10 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, Neighbors_
             for i in range(samples_per_pair):
                 batch[0][0][inst_counter] = neg_samples[0][i][0]
                 batch[0][1][inst_counter] = neg_samples[0][i][1]
-                for n in range(Neighbors_count):
+                for n in range(neighbors_count):
                     batch[0][n+2][inst_counter] = w_nbrs[n]
-                for n in range(Neighbors_count):
-                    batch[0][n+Neighbors_count+2][inst_counter] = c_nbrs[n]
+                for n in range(neighbors_count):
+                    batch[0][n+neighbors_count+2][inst_counter] = c_nbrs[n]
                 pred_sim = neg_samples[1][i]
                 if pred_sim != 0:  # if this is a positive example, replace 1 with the real similarity from the file
                     pred_sim = sim
@@ -167,7 +167,7 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, Neighbors_
                     print('Batch generation took', end - start, file=sys.stderr)
                 inst_counter = 0
                 inputs_list = [np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)]
-                for n in range(Neighbors_count*2):
+                for n in range(neighbors_count*2):
                     inputs_list.append(np.zeros((samples_per_batch, 1), dtype=int))
                 batch = (inputs_list, np.zeros((samples_per_batch, 1)))
                 start = time.time()
