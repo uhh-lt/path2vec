@@ -18,6 +18,12 @@ import keras.backend as K
 import random as rn
 import argparse
 
+# This script trains word embeddings on pairs of words and their similarities.
+# A possible source of such data is Wordnet and its shortest paths.
+
+# Example cmd for running this script:
+# python3 embeddings.py --input_file jcn-semcor-thresh01-near50.tsv.gz --vsize 300 --bsize 100 --lrate 0.001 --vocab_file synsets_vocab.json.gz --neighbor_count 3 --use_neighbors True --epochs 15
+
 
 def custom_loss(reg_1_output, reg_2_output):
     def my_loss(y_true, y_pred):
@@ -34,12 +40,6 @@ def custom_loss(reg_1_output, reg_2_output):
     
         return m_loss
     return my_loss
-
-# This script trains word embeddings on pairs of words and their similarities.
-# A possible source of such data is Wordnet and its shortest paths.
-
-# Example cmd for running this script:
-# python3 embeddings.py --input_file jcn-semcor-thresh01-near50.tsv.gz --vsize 300 --bsize 100 --lrate 0.001 --vocab_file synsets_vocab.json.gz --neighbor_count 3 --use_neighbors True --epochs 15
 
 
 if __name__ == "__main__":
