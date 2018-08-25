@@ -38,23 +38,9 @@ def custom_loss(reg_1_output, reg_2_output):
 # This script trains word embeddings on pairs of words and their similarities.
 # A possible source of such data is Wordnet and its shortest paths.
 
-# Arguments:
+# Example cmd for running this script:
+# python3 embeddings.py --input_file jcn-semcor-thresh01-near50.tsv.gz --vsize 300 --bsize 100 --lrate 0.001 --vocab_file synsets_vocab.json.gz --neighbor_count 3 --use_neighbors True --epochs 15
 
-# [obligatory] tab-separated gzipped file with training pairs and their similarities:
-# person.n.01     lover.n.03       0.22079177574204348
-# etc...
-
-# [obligatory] vector size (20, 40, 100, 300, etc)
-
-# [obligatory] batch size (10, 20, 60, 100 etc)
-
-# [obligatory] learning rate (default for Adam is 0.001)
-
-# [optional] gzipped JSON file with the vocabulary (list of words):
-# ["UNK", "'hood.n.01", "1530s.n.01", "15_may_organization.n.01", "1750s.n.01", "1760s.n.01"...]
-# etc
-# If the vocabulary file is not provided, it will be inferred from the training set
-# (can be painfully slow for large datasets)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Learning graph embeddings with path2vec')
@@ -62,7 +48,8 @@ if __name__ == "__main__":
     parser.add_argument('--vsize', type=int, default=300, help='vector size')
     parser.add_argument('--bsize', type=int, default=100, help='batch size')
     parser.add_argument('--lrate', type=float, default=0.001, help='learning rate')
-    parser.add_argument('--vocab_file', help='gzipped JSON file with the vocabulary (list of words)')
+    parser.add_argument('--vocab_file', help='[optional] gzipped JSON file with the vocabulary (list of words)')
+    # If the vocabulary file is not provided, it will be inferred from the training set (can be painfully slow for large datasets)
     parser.add_argument('--fix_seeds', default=True, help='fix seeds to ensure repeatability')
     parser.add_argument('--use_neighbors', default=False, help='whether or not to use the neighbor nodes-based regularizer')
     parser.add_argument('--neighbor_count', type=int, default=3, help='number of adjacent nodes to consider for regularization')
