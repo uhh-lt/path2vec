@@ -1,5 +1,9 @@
 # path2vec
-Learning to represent shortest paths and other graph-based measures of node similarities with graph embeddings
+Learning to represent shortest paths and other graph-based measures of node similarities with graph embeddings. This repository contains code related to this paper:  
+
+Andrey Kutuzov, Alexander Panchenko, Sarah Kohail, Mohammad Dorgham, Oleksiy Oliynyk, Chris Biemann (2018) [Learning Graph Embeddings from WordNet-based Similarity Measures](https://arxiv.org/abs//1808.05611).
+
+We present a new approach for learning graph embeddings, that relies on structural measures of node similarities for generation of training data. The model learns node embeddings that are able to approximate a given measure, such as the shortest path distance or any other. Evaluations of the proposed model on semantic similarity and word sense disambiguation tasks (using WordNet as the source of gold similarities) show that our method yields state-of-the-art results, but also is capable in certain cases to yield even better performance than the input similarity measure. The model is computationally efficient, orders of magnitude faster than the direct computation of graph distances.
 
 # Models evaluation
 
