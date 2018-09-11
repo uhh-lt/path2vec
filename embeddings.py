@@ -9,6 +9,7 @@ from keras.layers.embeddings import Embedding
 from keras.layers import Flatten
 from keras import optimizers
 from keras import backend
+from keras import regularizers
 from keras.callbacks import TensorBoard, EarlyStopping
 from helpers import *
 from tensorflow.python.client import device_lib
@@ -114,7 +115,7 @@ if __name__ == "__main__":
     # input_dim=vocab_size, output_dim=embedding_dimension, weights=[w_embedding], name='Word_embeddings')
     
     # For now, let's use Keras defaults for initialization:
-    word_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1, name='Word_embeddings')
+    word_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1, name='Word_embeddings', embeddings_regularizer=regularizers.l1(1e-10))
     
     # Model has 2 inputs: current word index, context word index
     word_index = Input(shape=(1,), name='Word')
