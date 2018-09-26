@@ -182,15 +182,15 @@ if __name__ == "__main__":
     print('Batch size:', batch_size)
 
     train_name = trainfile.split('.')[0] + '_embeddings_vsize' + str(embedding_dimension) + \
-                 '_bsize' + str(batch_size) + '_lr' + str(learn_rate).split('.')[-1]
+                 '_bsize' + str(batch_size) + '_lr' + str(learn_rate).split('.')[-1]+'_nn-'+str(args.use_neighbors)
 
     # create a secondary validation model to run our similarity checks during training
     similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
     validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
     sim_cb = SimilarityCallback(validation_model=validation_model)
 
-    loss_plot = TensorBoard(log_dir=train_name + '_logs', write_graph=False, embeddings_freq=10)
-    earlystopping = EarlyStopping(monitor='loss', min_delta=0.0001, patience=1, verbose=1, mode='auto')
+    loss_plot = TensorBoard(log_dir=train_name + '_logs', write_graph=False)
+    earlystopping = EarlyStopping(monitor='loss', min_delta=0.0001, patience=3, verbose=1, mode='auto')
 
     steps = no_train_pairs / batch_size  # How many times per epoch we will ask the batch generator to yield a batch
 
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     history = keras_model.fit_generator(
         batch_generator(wordpairs, vocab_dict, vocab_size, negative, batch_size, args.use_neighbors, neighbors_count),
         callbacks=[sim_cb, loss_plot, earlystopping], steps_per_epoch=steps, epochs=args.epochs,
-        workers=cores, verbose=1)
+        workers=cores, verbose=2)
 
     end = time.time()
     print('Training took:', int(end - start), 'seconds', file=sys.stderr)
