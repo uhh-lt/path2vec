@@ -20,4 +20,5 @@ dynamic_synset_score = evaluate_synsets(model, 'simlex/simlex_original.tsv', log
 
 name = modelfile.replace('_embeddings_', '_')[:-7]
 
+print('Model\tStatic\tDynamic')
 print(name + '\t' + str(static_synset_score[1][0]) + '\t' + str(dynamic_synset_score[1][0]))
