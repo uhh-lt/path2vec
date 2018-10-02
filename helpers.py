@@ -21,7 +21,7 @@ def build_connections(vocab_dict):
     global neighbors_dict
     neighbor_nodes = []
     for vocab, index in vocab_dict.items():
-        if len(vocab.lower().split('.')) != 3:
+        if vocab.count('.') < 2:
             continue
         synset = wn.synset(vocab)
         hypernyms = synset.hypernyms()
