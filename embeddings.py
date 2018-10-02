@@ -62,6 +62,7 @@ if __name__ == "__main__":
                         help='number of adjacent nodes to consider for regularization')
     parser.add_argument('--negative_count', type=int, default=3, help='number of negative samples')
     parser.add_argument('--epochs', type=int, default=10, help='number of training epochs')
+    parser.add_argument('--regularize', type=bool, default=False, help='L1 regularization of embeddings')
     args = parser.parse_args()
 
     print(device_lib.list_local_devices())
@@ -120,8 +121,11 @@ if __name__ == "__main__":
     # input_dim=vocab_size, output_dim=embedding_dimension, weights=[w_embedding], name='Word_embeddings')
 
     # For now, let's use Keras defaults for initialization:
-    word_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1, name='Word_embeddings',
-                                     embeddings_regularizer=regularizers.l1(1e-10))
+    if args.regularize:
+        word_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1, name='Word_embeddings',
+                                         embeddings_regularizer=regularizers.l1(1e-10))
+    else:
+        word_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1, name='Word_embeddings')
 
     # Model has 2 inputs: current word index, context word index
     word_index = Input(shape=(1,), name='Word')
@@ -182,7 +186,8 @@ if __name__ == "__main__":
     print('Batch size:', batch_size)
 
     train_name = trainfile.split('.')[0] + '_embeddings_vsize' + str(embedding_dimension) +'_bsize' + str(batch_size) \
-                 + '_lr' + str(learn_rate).split('.')[-1]+'_nn-'+str(args.use_neighbors)+str(args.neighbor_count)
+                 + '_lr' + str(learn_rate).split('.')[-1]+'_nn-'+str(args.use_neighbors)+str(args.neighbor_count)+\
+                 '_reg-'+str(args.regularize)
 
     # create a secondary validation model to run our similarity checks during training
     similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
