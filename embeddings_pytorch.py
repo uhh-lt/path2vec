@@ -9,7 +9,6 @@ Created on Thu Oct  4 13:15:27 2018
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import multiprocessing
 import helpers
 import numpy as np
 import random as rn
@@ -28,6 +27,9 @@ class Path2VecModel(nn.Module):
     def forward(self, inputs):
         embed1 = self.embeddings(inputs[0])
         embed2 = self.embeddings(inputs[1])
+        #normalize the vectors before the dot product so that dot product is the cosine proximity between the two vectors
+        embed1 = embed1 / embed1.norm(2, 2, True).clamp(min=1e-12).expand_as(embed1)
+        embed2 = embed2 / embed2.norm(2, 2, True).clamp(min=1e-12).expand_as(embed2)
         out = torch.sum(embed1*embed2, dim=2)
         
         return out
@@ -102,6 +104,7 @@ if __name__ == "__main__":
     print('Model name and layers:')
     print(model)
     
+    #begin the training..
     for epoch in range(args.epochs):
         print('Epoch #', epoch+1)
         total_loss, n_batches = 0, 0
@@ -122,7 +125,7 @@ if __name__ == "__main__":
     
             # Compute the loss function. 
             loss = loss_function(dot_prod, target_tensor)
-    
+
             # Do the backward pass and update the gradient
             loss.backward()
             optimizer.step()
