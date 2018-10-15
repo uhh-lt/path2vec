@@ -63,6 +63,8 @@ if __name__ == "__main__":
     parser.add_argument('--negative_count', type=int, default=3, help='number of negative samples')
     parser.add_argument('--epochs', type=int, default=10, help='number of training epochs')
     parser.add_argument('--regularize', type=bool, default=False, help='L1 regularization of embeddings')
+    parser.add_argument('--name', type=string, default='graph_emb', help='Run name, to be used in the file name')
+
     args = parser.parse_args()
 
     print(device_lib.list_local_devices())
@@ -73,6 +75,7 @@ if __name__ == "__main__":
     learn_rate = args.lrate  # Learning rate
     neighbors_count = args.neighbor_count
     negative = args.negative_count
+    run_name = args.name
 
     if args.fix_seeds:
         # fix seeds for repeatability of experiments
@@ -210,7 +213,7 @@ if __name__ == "__main__":
     print('Training took:', int(end - start), 'seconds', file=sys.stderr)
 
     # Saving the resulting vectors:
-    filename = train_name + '.vec.gz'
+    filename = train_name + '_' + run_name + '.vec.gz'
     save_word2vec_format(filename, vocab_dict, word_embedding_layer.get_weights()[0])
 
     backend.clear_session()
