@@ -8,12 +8,31 @@ import gzip
 from itertools import combinations
 from keras.callbacks import Callback
 from keras.preprocessing.sequence import skipgrams
+from keras import backend
 from gensim import utils
 import json
 import time
 from nltk.corpus import wordnet as wn
 
 neighbors_dict = dict()
+
+
+def custom_loss(reg_1_output, reg_2_output):
+    def my_loss(y_true, y_pred):
+        if len(reg_1_output) > 0 and len(reg_2_output) > 0:
+            beta = 0.01
+            gamma = 0.01
+            alpha = 1 - (beta + gamma)
+            m_loss = alpha * backend.mean(backend.square(y_pred - y_true), axis=-1)
+
+            m_loss -= beta * (sum(reg_1_output) / float(len(reg_1_output)))
+            m_loss -= gamma * (sum(reg_2_output) / float(len(reg_2_output)))
+        else:
+            m_loss = backend.mean(backend.square(y_pred - y_true), axis=-1)
+
+        return m_loss
+
+    return my_loss
 
 
 def build_connections(vocab_dict):

@@ -27,24 +27,6 @@ import argparse
 # --vocab_file synsets_vocab.json.gz --neighbor_count 3 --use_neighbors True --epochs 15
 
 
-def custom_loss(reg_1_output, reg_2_output):
-    def my_loss(y_true, y_pred):
-        if len(reg_1_output) > 0 and len(reg_2_output) > 0:
-            beta = 0.01
-            gamma = 0.01
-            alpha = 1 - (beta + gamma)
-            m_loss = alpha * backend.mean(backend.square(y_pred - y_true), axis=-1)
-
-            m_loss -= beta * (sum(reg_1_output) / float(len(reg_1_output)))
-            m_loss -= gamma * (sum(reg_2_output) / float(len(reg_2_output)))
-        else:
-            m_loss = backend.mean(backend.square(y_pred - y_true), axis=-1)
-
-        return m_loss
-
-    return my_loss
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Learning graph embeddings with path2vec')
     parser.add_argument('--input_file', required=True,
