@@ -56,7 +56,7 @@ if __name__ == "__main__":
     # If the vocabulary file is not provided, it will be inferred from the training set
     # (can be painfully slow for large datasets)
     parser.add_argument('--fix_seeds', default=True, help='fix seeds to ensure repeatability')
-    parser.add_argument('--use_neighbors', default=False,
+    parser.add_argument('--use_neighbors', type=bool, default=False,
                         help='whether or not to use the neighbor nodes-based regularizer')
     parser.add_argument('--neighbor_count', type=int, default=3,
                         help='number of adjacent nodes to consider for regularization')
