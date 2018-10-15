@@ -63,7 +63,7 @@ if __name__ == "__main__":
     parser.add_argument('--negative_count', type=int, default=3, help='number of negative samples')
     parser.add_argument('--epochs', type=int, default=10, help='number of training epochs')
     parser.add_argument('--regularize', type=bool, default=False, help='L1 regularization of embeddings')
-    parser.add_argument('--name', type=string, default='graph_emb', help='Run name, to be used in the file name')
+    parser.add_argument('--name', default='graph_emb', help='Run name, to be used in the file name')
 
     args = parser.parse_args()
 
