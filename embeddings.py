@@ -9,6 +9,7 @@ from keras.layers.embeddings import Embedding
 from keras.layers import Flatten
 from keras import optimizers
 from keras import regularizers
+from keras.layers import ReLU
 from keras.callbacks import TensorBoard, EarlyStopping
 from helpers import *
 from tensorflow.python.client import device_lib
@@ -139,11 +140,14 @@ if __name__ == "__main__":
     # The current word embedding is multiplied (dot product) with the context word embedding
     # TODO: what about negative dot products? Insert sigmoid...?
     word_context_product = dot([word_embedding, context_embedding], axes=1, normalize=True, name='word2context')
+    #word_context_product = ReLU()(word_context_product)
 
     reg1_output = []
     reg2_output = []
     if args.use_neighbors:
         for n in range(neighbors_count):
+            # reg1_output.append(ReLU()(dot([word_embedding, w_neighbor_embeds[n]], axes=1, normalize=True)))
+            # reg2_output.append(ReLU()(dot([context_embedding, c_neighbor_embeds[n]], axes=1, normalize=True)))
             reg1_output.append(dot([word_embedding, w_neighbor_embeds[n]], axes=1, normalize=True))
             reg2_output.append(dot([context_embedding, c_neighbor_embeds[n]], axes=1, normalize=True))
 
@@ -175,6 +179,7 @@ if __name__ == "__main__":
                  '_nn-' + str(args.use_neighbors) + str(args.neighbor_count) + '_reg-' + str(args.regularize)
 
     # create a secondary validation model to run our similarity checks during training
+    #similarity = ReLU()(dot([word_embedding, context_embedding], axes=1, normalize=True))
     similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
     validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
     sim_cb = SimilarityCallback(validation_model=validation_model)

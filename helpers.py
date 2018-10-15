@@ -17,16 +17,16 @@ from nltk.corpus import wordnet as wn
 neighbors_dict = dict()
 
 
-def custom_loss(reg_1_output, reg_2_output):
+def custom_loss(reg_1_output, reg_2_output, beta=0.01, gamma=0.01):
     def my_loss(y_true, y_pred):
         if len(reg_1_output) > 0 and len(reg_2_output) > 0:
-            beta = 0.01
-            gamma = 0.01
             alpha = 1 - (beta + gamma)
+            # Mean squared error (main loss):
             m_loss = alpha * backend.mean(backend.square(y_pred - y_true), axis=-1)
 
-            m_loss -= beta * (sum(reg_1_output) / float(len(reg_1_output)))
-            m_loss -= gamma * (sum(reg_2_output) / float(len(reg_2_output)))
+            # Auxiliary losses (we are maximizing similarity to neighbors in the graph)
+            m_loss -= beta * (sum(reg_1_output) / len(reg_1_output))
+            m_loss -= gamma * (sum(reg_2_output) / len(reg_2_output))
         else:
             m_loss = backend.mean(backend.square(y_pred - y_true), axis=-1)
 
@@ -44,7 +44,8 @@ def build_connections(vocab_dict):
         synset = wn.synset(vocab)
         hypernyms = synset.hypernyms()
         hyponyms = synset.hyponyms()
-        holonyms = synset.member_holonyms()
+        # holonyms = synset.member_holonyms()
+        holonyms = []
 
         neighbors = set(hypernyms + hyponyms + holonyms)
 
