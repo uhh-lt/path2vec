@@ -8,6 +8,7 @@ Created on Thu Oct  4 13:15:27 2018
 
 import torch
 import torch.nn as nn
+from torch.nn import functional as F
 import torch.optim as optim
 import helpers
 import numpy as np
@@ -35,7 +36,21 @@ class Path2VecModel(nn.Module):
         return out
     
     
-    
+def custom_loss(y_pred, y_true, reg_1_output, reg_2_output, use_neighbors):
+    if use_neighbors:
+        beta = 0.01
+        gamma = 0.01
+        alpha = 1 - (beta+gamma)
+        m_loss = alpha * F.mse_loss(y_pred, y_true, reduction='elementwise_mean')
+        
+        m_loss -= beta * reg_1_output.item()
+        m_loss -= gamma * reg_2_output.item()
+    else:
+        m_loss = F.mse_loss(y_pred, y_true, reduction='elementwise_mean')
+
+    return m_loss
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Learning graph embeddings with path2vec')
     parser.add_argument('--input_file', required=True,
@@ -46,8 +61,8 @@ if __name__ == "__main__":
     parser.add_argument('--vocab_file', help='[optional] gzipped JSON file with the vocabulary (list of words)')
     # If the vocabulary file is not provided, it will be inferred from the training set
     # (can be painfully slow for large datasets)
-    parser.add_argument('--fix_seeds', default=True, help='fix seeds to ensure repeatability')
-    parser.add_argument('--use_neighbors', default=False,
+    parser.add_argument('--fix_seeds', type=bool, default=True, help='fix seeds to ensure repeatability')
+    parser.add_argument('--use_neighbors', type=bool, default=False,
                         help='whether or not to use the neighbor nodes-based regularizer')
     parser.add_argument('--neighbor_count', type=int, default=3,
                         help='number of adjacent nodes to consider for regularization')
@@ -62,6 +77,8 @@ if __name__ == "__main__":
     learn_rate = args.lrate   # Learning rate
     neighbors_count = args.neighbor_count
     negative = args.negative_count
+    
+    print('Using Neighbors regularization: ', args.use_neighbors)
     
     if args.fix_seeds:
         #fix seeds for repeatability of experiments
@@ -87,6 +104,7 @@ if __name__ == "__main__":
             no_train_pairs += 1
         print('Number of pairs in the training set:', no_train_pairs)
     
+    print('Retreiving neighbors of training samples...')
     neighbors_dict = helpers.build_connections(vocab_dict)
     
     vocab_size = len(vocab_dict)
@@ -98,8 +116,8 @@ if __name__ == "__main__":
         torch.cuda.manual_seed(1)
         print("Using GPU...")
     
-    loss_function = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
+    l1_factor = 1e-10
     
     print('Model name and layers:')
     print(model)
@@ -108,24 +126,55 @@ if __name__ == "__main__":
     for epoch in range(args.epochs):
         print('Epoch #', epoch+1)
         total_loss, n_batches = 0, 0
-        batchGenerator = helpers.batch_generator_2(wordpairs, vocab_dict, vocab_size, negative, batch_size, False, 0)
+        batchGenerator = helpers.batch_generator_2(wordpairs, vocab_dict, vocab_size, negative, batch_size)
         for batch in batchGenerator:
             n_batches +=1
+            l1_reg_term = 0
+            reg1_output, reg2_output = 0, 0
             inputs, targets = batch
             target_tensor = torch.from_numpy(targets).float()
-            input_var = torch.Tensor([inputs[0], inputs[1]])
-            input_var = input_var.long()
+            
+            input_var = torch.Tensor([inputs[0], inputs[1]]).long()
             if torch.cuda.is_available():
                 input_var = input_var.cuda()
                 target_tensor = target_tensor.cuda()
     
+            
             model.zero_grad()
     
-            dot_prod = model(input_var)
+            similarity_pred = model(input_var)
     
+            if args.use_neighbors:
+                #get only the positive samples because the batch variable contains the generated negatives as well
+                positive_samples = helpers.get_current_positive_samples()
+                nbrs_count = 0
+                for word_idx in positive_samples[0]:
+                    neighbors = helpers.get_node_neighbors(word_idx)
+                    for neighbor in neighbors:
+                        nbrs_count += 1
+                        input_var = torch.Tensor([[[word_idx]], [[neighbor]]]).long()
+                        if torch.cuda.is_available():
+                            input_var = input_var.cuda()
+                        reg1_output += model(input_var)
+                reg1_output /= float(nbrs_count)
+                nbrs_count = 0
+                for word_idx in positive_samples[1]: #context words
+                    neighbors = helpers.get_node_neighbors(word_idx)
+                    for neighbor in neighbors:
+                        nbrs_count += 1
+                        input_var = torch.Tensor([[[word_idx]], [[neighbor]]]).long()
+                        if torch.cuda.is_available():
+                            input_var = input_var.cuda()
+                        reg2_output += model(input_var)
+                reg2_output /= float(nbrs_count)
+                   
             # Compute the loss function. 
-            loss = loss_function(dot_prod, target_tensor)
-
+            loss = custom_loss(similarity_pred, target_tensor, reg1_output, reg2_output, args.use_neighbors)
+            if args.regularize == True:
+                for param in model.parameters():
+                    l1_reg_term += torch.norm(param, 1)
+                loss += l1_factor * l1_reg_term
+            
             # Do the backward pass and update the gradient
             loss.backward()
             optimizer.step()

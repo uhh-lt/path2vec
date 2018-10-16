@@ -15,6 +15,7 @@ from nltk.corpus import wordnet as wn
 
 
 neighbors_dict = dict()
+current_pos_samples = [[],[]]
 
 def build_connections(vocab_dict):
     global neighbors_dict
@@ -176,19 +177,18 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighb
                 batch = (inputs_list, np.zeros((samples_per_batch, 1)))
                 start = time.time()
 
-def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighbors, neighbors_count):
+def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size):
     """
     Generates training batches
     """
+    global current_pos_samples
     timing = False  # Whether to print out batch generation time
     
     samples_per_pair = 2 + 2 * nsize  # How many training instances we get from each pair
     samples_per_batch = samples_per_pair * batch_size  # How many samples will be there in each batch
 
     inputs_list = [np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)]
-    if use_neighbors:
-        for n in range(neighbors_count*2):
-            inputs_list.append(np.zeros((samples_per_batch, 1), dtype=int))
+    
     # Batch should be a tuple of inputs and targets. First we create it empty:
     batch = (inputs_list, np.zeros((samples_per_batch, 1)))
     inst_counter = 0
@@ -206,22 +206,8 @@ def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size, use_neig
 
         current_word_index = sent_seq[0]
         context_word_index = sent_seq[1]
-        if use_neighbors and neighbors_count > 0:
-            w_neighbors = neighbors_dict[current_word_index]
-            c_neighbors = neighbors_dict[context_word_index]
-            w_nbrs = []
-            c_nbrs = []
-        if use_neighbors:
-            for n in range(neighbors_count):
-                if w_neighbors and len(w_neighbors) > n:
-                    w_nbrs.append(w_neighbors[n])
-                else:
-                    w_nbrs.append(current_word_index)
-                if c_neighbors and len(c_neighbors) > n:
-                    c_nbrs.append(c_neighbors[n])
-                else:
-                    c_nbrs.append(context_word_index)
-        
+        current_pos_samples[0].append(current_word_index)
+        current_pos_samples[1].append(context_word_index)
 
         # get negative samples for the current pair
         neg_samples = get_negative_samples(current_word_index, context_word_index, vocab_size, nsize)
@@ -230,11 +216,6 @@ def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size, use_neig
         for i in range(samples_per_pair):
             batch[0][0][inst_counter] = neg_samples[0][i][0]
             batch[0][1][inst_counter] = neg_samples[0][i][1]
-            if use_neighbors:
-                for n in range(neighbors_count):
-                    batch[0][n+2][inst_counter] = w_nbrs[n]
-                for n in range(neighbors_count):
-                    batch[0][n+neighbors_count+2][inst_counter] = c_nbrs[n]
             pred_sim = neg_samples[1][i]
             if pred_sim != 0:  # if this is a positive example, replace 1 with the real similarity from the file
                 pred_sim = sim
@@ -247,15 +228,19 @@ def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size, use_neig
                 print('Batch generation took', end - start, file=sys.stderr)
             inst_counter = 0
             inputs_list = [np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)]
-            if use_neighbors:
-                for n in range(neighbors_count*2):
-                    inputs_list.append(np.zeros((samples_per_batch, 1), dtype=int))
             batch = (inputs_list, np.zeros((samples_per_batch, 1)))
+            current_pos_samples = [[],[]]
             start = time.time()
         
     #return the remaining samples
     yield batch
 
+
+def get_node_neighbors(word_idx):
+    return neighbors_dict[word_idx]
+
+def get_current_positive_samples():
+    return current_pos_samples
 
 def get_negative_samples(current_word_index, context_word_index, vocab_size, nsize):
     # Generate random negative samples, by default the same number as positive samples
