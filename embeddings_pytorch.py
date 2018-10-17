@@ -78,7 +78,7 @@ if __name__ == "__main__":
     neighbors_count = args.neighbor_count
     negative = args.negative_count
     
-    print('Using Neighbors regularization: ', args.use_neighbors)
+    print('Using adjacent nodes regularization: ', args.use_neighbors)
     
     if args.fix_seeds:
         #fix seeds for repeatability of experiments
@@ -130,7 +130,6 @@ if __name__ == "__main__":
         for batch in batchGenerator:
             n_batches +=1
             l1_reg_term = 0
-            reg1_output, reg2_output = 0, 0
             inputs, targets = batch
             target_tensor = torch.from_numpy(targets).float()
             
@@ -141,32 +140,39 @@ if __name__ == "__main__":
     
             
             model.zero_grad()
-    
+            #do the forward pass
             similarity_pred = model(input_var)
-    
+
             if args.use_neighbors:
                 #get only the positive samples because the batch variable contains the generated negatives as well
                 positive_samples = helpers.get_current_positive_samples()
-                nbrs_count = 0
+                inputs_list = [[], []]
                 for word_idx in positive_samples[0]:
                     neighbors = helpers.get_node_neighbors(word_idx)
                     for neighbor in neighbors:
-                        nbrs_count += 1
-                        input_var = torch.Tensor([[[word_idx]], [[neighbor]]]).long()
-                        if torch.cuda.is_available():
-                            input_var = input_var.cuda()
-                        reg1_output += model(input_var)
-                reg1_output /= float(nbrs_count)
-                nbrs_count = 0
+                        inputs_list[0].append([word_idx])
+                        inputs_list[1].append([neighbor])
+                        
+                input_var = torch.Tensor(inputs_list).long()
+                if torch.cuda.is_available():
+                    input_var = input_var.cuda()
+                    
+                reg1_dot_prod = model(input_var)
+                reg1_output = torch.sum(reg1_dot_prod, dim=0) / len(reg1_dot_prod)
+
+                inputs_list = [[], []]
                 for word_idx in positive_samples[1]: #context words
                     neighbors = helpers.get_node_neighbors(word_idx)
                     for neighbor in neighbors:
-                        nbrs_count += 1
-                        input_var = torch.Tensor([[[word_idx]], [[neighbor]]]).long()
-                        if torch.cuda.is_available():
-                            input_var = input_var.cuda()
-                        reg2_output += model(input_var)
-                reg2_output /= float(nbrs_count)
+                        inputs_list[0].append([word_idx])
+                        inputs_list[1].append([neighbor])
+                        
+                input_var = torch.Tensor(inputs_list).long()
+                if torch.cuda.is_available():
+                    input_var = input_var.cuda()
+                    
+                reg2_dot_prod = model(input_var)
+                reg2_output = torch.sum(reg2_dot_prod, dim=0) / len(reg2_dot_prod)
                    
             # Compute the loss function. 
             loss = custom_loss(similarity_pred, target_tensor, reg1_output, reg2_output, args.use_neighbors)
