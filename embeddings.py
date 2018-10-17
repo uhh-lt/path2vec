@@ -9,6 +9,7 @@ from keras.layers.embeddings import Embedding
 from keras.layers import Flatten
 from keras import optimizers
 from keras import regularizers
+from keras.layers import ReLU
 from keras.callbacks import TensorBoard, EarlyStopping
 from helpers import *
 from tensorflow.python.client import device_lib
@@ -27,24 +28,6 @@ import argparse
 # --vocab_file synsets_vocab.json.gz --neighbor_count 3 --use_neighbors True --epochs 15
 
 
-def custom_loss(reg_1_output, reg_2_output):
-    def my_loss(y_true, y_pred):
-        if len(reg_1_output) > 0 and len(reg_2_output) > 0:
-            beta = 0.01
-            gamma = 0.01
-            alpha = 1 - (beta + gamma)
-            m_loss = alpha * backend.mean(backend.square(y_pred - y_true), axis=-1)
-
-            m_loss -= beta * (sum(reg_1_output) / float(len(reg_1_output)))
-            m_loss -= gamma * (sum(reg_2_output) / float(len(reg_2_output)))
-        else:
-            m_loss = backend.mean(backend.square(y_pred - y_true), axis=-1)
-
-        return m_loss
-
-    return my_loss
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Learning graph embeddings with path2vec')
     parser.add_argument('--input_file', required=True,
@@ -56,13 +39,15 @@ if __name__ == "__main__":
     # If the vocabulary file is not provided, it will be inferred from the training set
     # (can be painfully slow for large datasets)
     parser.add_argument('--fix_seeds', default=True, help='fix seeds to ensure repeatability')
-    parser.add_argument('--use_neighbors', default=False,
+    parser.add_argument('--use_neighbors', type=bool, default=False,
                         help='whether or not to use the neighbor nodes-based regularizer')
     parser.add_argument('--neighbor_count', type=int, default=3,
                         help='number of adjacent nodes to consider for regularization')
     parser.add_argument('--negative_count', type=int, default=3, help='number of negative samples')
     parser.add_argument('--epochs', type=int, default=10, help='number of training epochs')
     parser.add_argument('--regularize', type=bool, default=False, help='L1 regularization of embeddings')
+    parser.add_argument('--name', default='graph_emb', help='Run name, to be used in the file name')
+
     args = parser.parse_args()
 
     print(device_lib.list_local_devices())
@@ -73,6 +58,7 @@ if __name__ == "__main__":
     learn_rate = args.lrate  # Learning rate
     neighbors_count = args.neighbor_count
     negative = args.negative_count
+    run_name = args.name
 
     if args.fix_seeds:
         # fix seeds for repeatability of experiments
@@ -154,11 +140,14 @@ if __name__ == "__main__":
     # The current word embedding is multiplied (dot product) with the context word embedding
     # TODO: what about negative dot products? Insert sigmoid...?
     word_context_product = dot([word_embedding, context_embedding], axes=1, normalize=True, name='word2context')
+    #word_context_product = ReLU()(word_context_product)
 
     reg1_output = []
     reg2_output = []
     if args.use_neighbors:
         for n in range(neighbors_count):
+            # reg1_output.append(ReLU()(dot([word_embedding, w_neighbor_embeds[n]], axes=1, normalize=True)))
+            # reg2_output.append(ReLU()(dot([context_embedding, c_neighbor_embeds[n]], axes=1, normalize=True)))
             reg1_output.append(dot([word_embedding, w_neighbor_embeds[n]], axes=1, normalize=True))
             reg2_output.append(dot([context_embedding, c_neighbor_embeds[n]], axes=1, normalize=True))
 
@@ -185,11 +174,12 @@ if __name__ == "__main__":
     print(keras_model.summary())
     print('Batch size:', batch_size)
 
-    train_name = trainfile.split('.')[0] + '_embeddings_vsize' + str(embedding_dimension) +'_bsize' + str(batch_size) \
-                 + '_lr' + str(learn_rate).split('.')[-1]+'_nn-'+str(args.use_neighbors)+str(args.neighbor_count)+\
-                 '_reg-'+str(args.regularize)
+    train_name = trainfile.split('.')[0] + '_embeddings_vsize' + str(embedding_dimension) + \
+                 '_bsize' + str(batch_size) + '_lr' + str(learn_rate).split('.')[-1] + \
+                 '_nn-' + str(args.use_neighbors) + str(args.neighbor_count) + '_reg-' + str(args.regularize)
 
     # create a secondary validation model to run our similarity checks during training
+    #similarity = ReLU()(dot([word_embedding, context_embedding], axes=1, normalize=True))
     similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
     validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
     sim_cb = SimilarityCallback(validation_model=validation_model)
@@ -210,7 +200,7 @@ if __name__ == "__main__":
     print('Training took:', int(end - start), 'seconds', file=sys.stderr)
 
     # Saving the resulting vectors:
-    filename = train_name + '.vec.gz'
+    filename = train_name + '_' + run_name + '.vec.gz'
     save_word2vec_format(filename, vocab_dict, word_embedding_layer.get_weights()[0])
 
     backend.clear_session()

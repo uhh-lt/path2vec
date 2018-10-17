@@ -8,36 +8,57 @@ import gzip
 from itertools import combinations
 from keras.callbacks import Callback
 from keras.preprocessing.sequence import skipgrams
+from keras import backend
 from gensim import utils
 import json
 import time
 from nltk.corpus import wordnet as wn
 
-
 neighbors_dict = dict()
 current_pos_samples = [[],[]]
+
+
+def custom_loss(reg_1_output, reg_2_output, beta=0.01, gamma=0.01):
+    def my_loss(y_true, y_pred):
+        if len(reg_1_output) > 0 and len(reg_2_output) > 0:
+            alpha = 1 - (beta + gamma)
+            # Mean squared error (main loss):
+            m_loss = alpha * backend.mean(backend.square(y_pred - y_true), axis=-1)
+
+            # Auxiliary losses (we are maximizing similarity to neighbors in the graph)
+            m_loss -= beta * (sum(reg_1_output) / len(reg_1_output))
+            m_loss -= gamma * (sum(reg_2_output) / len(reg_2_output))
+        else:
+            m_loss = backend.mean(backend.square(y_pred - y_true), axis=-1)
+
+        return m_loss
+
+    return my_loss
+
 
 def build_connections(vocab_dict):
     global neighbors_dict
     neighbor_nodes = []
     for vocab, index in vocab_dict.items():
-        if len(vocab.lower().rsplit('.', 2)) != 3:
+        if vocab.count('.') < 2:
             continue
         synset = wn.synset(vocab)
         hypernyms = synset.hypernyms()
         hyponyms = synset.hyponyms()
-        
-        for hypernym in hypernyms:
-            if vocab_dict[hypernym.name()]:
-                neighbor_nodes.append(vocab_dict[hypernym.name()])
-        for hyponym in hyponyms:
-            if vocab_dict[hyponym.name()]:
-                neighbor_nodes.append(vocab_dict[hyponym.name()])
-        
+        # holonyms = synset.member_holonyms()
+        holonyms = []
+
+        neighbors = set(hypernyms + hyponyms + holonyms)
+
+        for neighbor in neighbors:
+            if vocab_dict[neighbor.name()]:
+                neighbor_nodes.append(vocab_dict[neighbor.name()])
+
         neighbors_dict[index] = neighbor_nodes
         neighbor_nodes = []
-    
+
     return neighbors_dict
+
 
 class Wordpairs(object):
     """
@@ -111,7 +132,7 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighb
 
         inputs_list = [np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)]
         if use_neighbors:
-            for n in range(neighbors_count*2):
+            for n in range(neighbors_count * 2):
                 inputs_list.append(np.zeros((samples_per_batch, 1), dtype=int))
         # Batch should be a tuple of inputs and targets. First we create it empty:
         batch = (inputs_list, np.zeros((samples_per_batch, 1)))
@@ -145,7 +166,6 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighb
                         c_nbrs.append(c_neighbors[n])
                     else:
                         c_nbrs.append(context_word_index)
-            
 
             # get negative samples for the current pair
             neg_samples = get_negative_samples(current_word_index, context_word_index, vocab_size, nsize)
@@ -156,9 +176,9 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighb
                 batch[0][1][inst_counter] = neg_samples[0][i][1]
                 if use_neighbors:
                     for n in range(neighbors_count):
-                        batch[0][n+2][inst_counter] = w_nbrs[n]
+                        batch[0][n + 2][inst_counter] = w_nbrs[n]
                     for n in range(neighbors_count):
-                        batch[0][n+neighbors_count+2][inst_counter] = c_nbrs[n]
+                        batch[0][n + neighbors_count + 2][inst_counter] = c_nbrs[n]
                 pred_sim = neg_samples[1][i]
                 if pred_sim != 0:  # if this is a positive example, replace 1 with the real similarity from the file
                     pred_sim = sim
@@ -172,10 +192,11 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighb
                 inst_counter = 0
                 inputs_list = [np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)]
                 if use_neighbors:
-                    for n in range(neighbors_count*2):
+                    for n in range(neighbors_count * 2):
                         inputs_list.append(np.zeros((samples_per_batch, 1), dtype=int))
                 batch = (inputs_list, np.zeros((samples_per_batch, 1)))
                 start = time.time()
+
 
 def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size):
     """
@@ -183,12 +204,12 @@ def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size):
     """
     global current_pos_samples
     timing = False  # Whether to print out batch generation time
-    
+
     samples_per_pair = 2 + 2 * nsize  # How many training instances we get from each pair
     samples_per_batch = samples_per_pair * batch_size  # How many samples will be there in each batch
 
     inputs_list = [np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)]
-    
+
     # Batch should be a tuple of inputs and targets. First we create it empty:
     batch = (inputs_list, np.zeros((samples_per_batch, 1)))
     inst_counter = 0
@@ -206,6 +227,7 @@ def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size):
 
         current_word_index = sent_seq[0]
         context_word_index = sent_seq[1]
+
         current_pos_samples[0].append(current_word_index)
         current_pos_samples[1].append(context_word_index)
 
@@ -216,6 +238,7 @@ def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size):
         for i in range(samples_per_pair):
             batch[0][0][inst_counter] = neg_samples[0][i][0]
             batch[0][1][inst_counter] = neg_samples[0][i][1]
+
             pred_sim = neg_samples[1][i]
             if pred_sim != 0:  # if this is a positive example, replace 1 with the real similarity from the file
                 pred_sim = sim
@@ -228,11 +251,12 @@ def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size):
                 print('Batch generation took', end - start, file=sys.stderr)
             inst_counter = 0
             inputs_list = [np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)]
+
             batch = (inputs_list, np.zeros((samples_per_batch, 1)))
             current_pos_samples = [[],[]]
             start = time.time()
-        
-    #return the remaining samples
+
+    # return the remaining samples
     yield batch
 
 
