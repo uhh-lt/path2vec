@@ -43,8 +43,8 @@ def custom_loss(y_pred, y_true, reg_1_output, reg_2_output, use_neighbors):
         alpha = 1 - (beta+gamma)
         m_loss = alpha * F.mse_loss(y_pred, y_true, reduction='elementwise_mean')
         
-        m_loss -= beta * reg_1_output.item()
-        m_loss -= gamma * reg_2_output.item()
+        m_loss -= beta * reg_1_output
+        m_loss -= gamma * reg_2_output
     else:
         m_loss = F.mse_loss(y_pred, y_true, reduction='elementwise_mean')
 
@@ -158,7 +158,7 @@ if __name__ == "__main__":
                     input_var = input_var.cuda()
                     
                 reg1_dot_prod = model(input_var)
-                reg1_output = torch.sum(reg1_dot_prod, dim=0) / len(reg1_dot_prod)
+                reg1_output = torch.sum(reg1_dot_prod) / len(reg1_dot_prod)
 
                 inputs_list = [[], []]
                 for word_idx in positive_samples[1]: #context words
@@ -172,7 +172,7 @@ if __name__ == "__main__":
                     input_var = input_var.cuda()
                     
                 reg2_dot_prod = model(input_var)
-                reg2_output = torch.sum(reg2_dot_prod, dim=0) / len(reg2_dot_prod)
+                reg2_output = torch.sum(reg2_dot_prod) / len(reg2_dot_prod)
                    
             # Compute the loss function. 
             loss = custom_loss(similarity_pred, target_tensor, reg1_output, reg2_output, args.use_neighbors)
