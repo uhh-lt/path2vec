@@ -13,6 +13,7 @@ from gensim import utils
 import json
 import time
 from nltk.corpus import wordnet as wn
+import random
 
 neighbors_dict = dict()
 current_pos_samples = [[],[]]
@@ -159,11 +160,11 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighb
             if use_neighbors:
                 for n in range(neighbors_count):
                     if w_neighbors and len(w_neighbors) > n:
-                        w_nbrs.append(w_neighbors[n])
+                        w_nbrs.append(random.choice(w_neighbors))
                     else:
                         w_nbrs.append(current_word_index)
                     if c_neighbors and len(c_neighbors) > n:
-                        c_nbrs.append(c_neighbors[n])
+                        c_nbrs.append(random.choice(c_neighbors))
                     else:
                         c_nbrs.append(context_word_index)
 
