@@ -49,6 +49,36 @@ def custom_loss(y_pred, y_true, reg_1_output, reg_2_output, use_neighbors, beta=
     return m_loss
 
 
+def load_training_data(trainfile):
+    wordpairs = helpers.Wordpairs(trainfile)
+    
+    if not args.vocab_file:
+        print('Building vocabulary from the training set...', file=sys.stderr)
+        no_train_pairs, vocab_dict, inverted_vocabulary = helpers.build_vocabulary(wordpairs)
+        print('Building vocabulary finished', file=sys.stderr)
+    else:
+        vocabulary_file = args.vocab_file  # JSON file with the ready-made vocabulary
+        print('Loading vocabulary from file', vocabulary_file, file=sys.stderr)
+        vocab_dict, inverted_vocabulary = helpers.vocab_from_file(vocabulary_file)
+        print('Counting the number of pairs in the training set...')
+        no_train_pairs = 0
+        for line in wordpairs:
+            no_train_pairs += 1
+        print('Number of pairs in the training set:', no_train_pairs)
+    
+    return wordpairs, vocab_dict
+
+
+def save_embeddings(train_name):
+    filename = train_name + '.vec.gz'
+    # Saving the resulting vectors
+    embeddings = model.state_dict()['embeddings.weight']
+    if torch.cuda.is_available():
+        embeddings = embeddings.cpu()
+    helpers.save_word2vec_format(filename, vocab_dict, embeddings.numpy())
+    
+    
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Learning graph embeddings with path2vec')
     parser.add_argument('--input_file', required=True,
@@ -92,29 +122,16 @@ if __name__ == "__main__":
         if torch.cuda.is_available():
             torch.cuda.manual_seed(1)
     
-    wordpairs = helpers.Wordpairs(trainfile)
-    
-    if not args.vocab_file:
-        print('Building vocabulary from the training set...', file=sys.stderr)
-        no_train_pairs, vocab_dict, inverted_vocabulary = helpers.build_vocabulary(wordpairs)
-        print('Building vocabulary finished', file=sys.stderr)
-    else:
-        vocabulary_file = args.vocab_file  # JSON file with the ready-made vocabulary
-        print('Loading vocabulary from file', vocabulary_file, file=sys.stderr)
-        vocab_dict, inverted_vocabulary = helpers.vocab_from_file(vocabulary_file)
-        print('Counting the number of pairs in the training set...')
-        no_train_pairs = 0
-        for line in wordpairs:
-            no_train_pairs += 1
-        print('Number of pairs in the training set:', no_train_pairs)
+    wordpairs, vocab_dict = load_training_data(trainfile)
     
     print('Retreiving neighbors of training samples...')
-    neighbors_dict = helpers.build_connections(vocab_dict)
+    helpers.build_connections(vocab_dict)
     
     vocab_size = len(vocab_dict)
     
-    
+    #instantiate the model
     model = Path2VecModel(vocab_size, embedding_dimension)
+    #use GPU if available
     if torch.cuda.is_available():
         model.cuda()
         torch.cuda.manual_seed(1)
@@ -197,10 +214,6 @@ if __name__ == "__main__":
     train_name = trainfile.split('.')[0] + '_embeddings_vsize' + str(embedding_dimension) +'_bsize' + str(batch_size) \
                  + '_lr' + str(learn_rate).split('.')[-1]+'_nn-'+str(args.use_neighbors)+str(args.neighbor_count)+\
                  '_reg-'+str(args.regularize)
-    filename = train_name + '.vec.gz'
-    # Saving the resulting vectors
-    embeddings = model.state_dict()['embeddings.weight']
-    if torch.cuda.is_available():
-        embeddings = embeddings.cpu()
-    helpers.save_word2vec_format(filename, vocab_dict, embeddings.numpy())
+    save_embeddings(train_name)
+    
     
