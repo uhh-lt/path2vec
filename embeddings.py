@@ -9,16 +9,16 @@ from keras.layers.embeddings import Embedding
 from keras.layers import Flatten
 from keras import optimizers
 from keras import regularizers
-from keras.layers import ReLU
+import sys
 from keras.callbacks import TensorBoard, EarlyStopping
-from helpers import *
+import helpers
 from tensorflow.python.client import device_lib
 import numpy as np
 import tensorflow as tf
 from keras import backend
 import random as rn
 import argparse
-
+import time
 
 # This script trains word embeddings on pairs of words and their similarities.
 # A possible source of such data is Wordnet and its shortest paths.
@@ -47,6 +47,9 @@ if __name__ == "__main__":
     parser.add_argument('--epochs', type=int, default=10, help='number of training epochs')
     parser.add_argument('--regularize', type=bool, default=False, help='L1 regularization of embeddings')
     parser.add_argument('--name', default='graph_emb', help='Run name, to be used in the file name')
+    parser.add_argument('--l1factor', type=float, default=1e-10, help='L1 regularizer coefficient')
+    parser.add_argument('--beta', type=float, default=0.01, help='neighbors-based regularizer first coefficient')
+    parser.add_argument('--gamma', type=float, default=0.01, help='neighbors-based regularizer second coefficient')
 
     args = parser.parse_args()
 
@@ -59,6 +62,9 @@ if __name__ == "__main__":
     neighbors_count = args.neighbor_count
     negative = args.negative_count
     run_name = args.name
+    l1_factor = args.l1factor
+    beta = args.beta
+    gamma = args.gamma
 
     if args.fix_seeds:
         # fix seeds for repeatability of experiments
@@ -71,23 +77,23 @@ if __name__ == "__main__":
 
     cores = multiprocessing.cpu_count()
 
-    wordpairs = Wordpairs(trainfile)
+    wordpairs = helpers.Wordpairs(trainfile)
 
     if not args.vocab_file:
         print('Building vocabulary from the training set...', file=sys.stderr)
-        no_train_pairs, vocab_dict, inverted_vocabulary = build_vocabulary(wordpairs)
+        no_train_pairs, vocab_dict, inverted_vocabulary = helpers.build_vocabulary(wordpairs)
         print('Building vocabulary finished', file=sys.stderr)
     else:
         vocabulary_file = args.vocab_file  # JSON file with the ready-made vocabulary
         print('Loading vocabulary from file', vocabulary_file, file=sys.stderr)
-        vocab_dict, inverted_vocabulary = vocab_from_file(vocabulary_file)
+        vocab_dict, inverted_vocabulary = helpers.vocab_from_file(vocabulary_file)
         print('Counting the number of pairs in the training set...')
         no_train_pairs = 0
         for line in wordpairs:
             no_train_pairs += 1
         print('Number of pairs in the training set:', no_train_pairs)
 
-    neighbors_dict = build_connections(vocab_dict)
+    neighbors_dict = helpers.build_connections(vocab_dict)
 
     vocab_size = len(vocab_dict)
     valid_size = 4  # Number of random words to log their nearest neighbours after each epoch
@@ -109,7 +115,7 @@ if __name__ == "__main__":
     # For now, let's use Keras defaults for initialization:
     if args.regularize:
         word_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1, name='Word_embeddings',
-                                         embeddings_regularizer=regularizers.l1(1e-10))
+                                         embeddings_regularizer=regularizers.l1(l1_factor))
     else:
         word_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1, name='Word_embeddings')
 
@@ -169,7 +175,7 @@ if __name__ == "__main__":
 
     adam = optimizers.Adam(lr=learn_rate)
 
-    keras_model.compile(optimizer=adam, loss=custom_loss(reg1_output, reg2_output), metrics=['mse'])
+    keras_model.compile(optimizer=adam, loss=helpers.custom_loss(reg1_output, reg2_output, beta, gamma), metrics=['mse'])
 
     print(keras_model.summary())
     print('Batch size:', batch_size)
@@ -182,7 +188,7 @@ if __name__ == "__main__":
     #similarity = ReLU()(dot([word_embedding, context_embedding], axes=1, normalize=True))
     similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
     validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
-    sim_cb = SimilarityCallback(validation_model=validation_model)
+    sim_cb = helpers.SimilarityCallback(validation_model=validation_model)
 
     loss_plot = TensorBoard(log_dir=train_name + '_logs', write_graph=False)
     earlystopping = EarlyStopping(monitor='loss', min_delta=0.0001, patience=1, verbose=1, mode='auto')
@@ -192,7 +198,7 @@ if __name__ == "__main__":
     # Let's start training!
     start = time.time()
     history = keras_model.fit_generator(
-        batch_generator(wordpairs, vocab_dict, vocab_size, negative, batch_size, args.use_neighbors, neighbors_count),
+        helpers.batch_generator(wordpairs, vocab_dict, vocab_size, negative, batch_size, args.use_neighbors, neighbors_count),
         callbacks=[sim_cb, loss_plot, earlystopping], steps_per_epoch=steps, epochs=args.epochs,
         workers=cores, verbose=2)
 
@@ -201,6 +207,6 @@ if __name__ == "__main__":
 
     # Saving the resulting vectors:
     filename = train_name + '_' + run_name + '.vec.gz'
-    save_word2vec_format(filename, vocab_dict, word_embedding_layer.get_weights()[0])
+    helpers.save_word2vec_format(filename, vocab_dict, word_embedding_layer.get_weights()[0])
 
     backend.clear_session()

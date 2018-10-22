@@ -36,10 +36,8 @@ class Path2VecModel(nn.Module):
         return out
     
     
-def custom_loss(y_pred, y_true, reg_1_output, reg_2_output, use_neighbors):
+def custom_loss(y_pred, y_true, reg_1_output, reg_2_output, use_neighbors, beta=0.01, gamma=0.01):
     if use_neighbors:
-        beta = 0.01
-        gamma = 0.01
         alpha = 1 - (beta+gamma)
         m_loss = alpha * F.mse_loss(y_pred, y_true, reduction='elementwise_mean')
         
@@ -69,6 +67,9 @@ if __name__ == "__main__":
     parser.add_argument('--negative_count', type=int, default=3, help='number of negative samples')
     parser.add_argument('--epochs', type=int, default=10, help='number of training epochs')
     parser.add_argument('--regularize', type=bool, default=False, help='L1 regularization of embeddings')
+    parser.add_argument('--l1factor', type=float, default=1e-10, help='L1 regularizer coefficient')
+    parser.add_argument('--beta', type=float, default=0.01, help='neighbors-based regularizer first coefficient')
+    parser.add_argument('--gamma', type=float, default=0.01, help='neighbors-based regularizer second coefficient')
     args = parser.parse_args()
     
     trainfile = args.input_file  # Gzipped file with pairs and their similarities
@@ -77,6 +78,9 @@ if __name__ == "__main__":
     learn_rate = args.lrate   # Learning rate
     neighbors_count = args.neighbor_count
     negative = args.negative_count
+    l1_factor = args.l1factor
+    beta = args.beta
+    gamma = args.gamma
     
     print('Using adjacent nodes regularization: ', args.use_neighbors)
     
@@ -116,8 +120,7 @@ if __name__ == "__main__":
         torch.cuda.manual_seed(1)
         print("Using GPU...")
     
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    l1_factor = 1e-10
+    optimizer = optim.Adam(model.parameters(), lr=learn_rate)
     
     print('Model name and layers:')
     print(model)
@@ -175,7 +178,7 @@ if __name__ == "__main__":
                 reg2_output = torch.sum(reg2_dot_prod) / len(reg2_dot_prod)
                    
             # Compute the loss function. 
-            loss = custom_loss(similarity_pred, target_tensor, reg1_output, reg2_output, args.use_neighbors)
+            loss = custom_loss(similarity_pred, target_tensor, reg1_output, reg2_output, args.use_neighbors, beta, gamma)
             if args.regularize == True:
                 for param in model.parameters():
                     l1_reg_term += torch.norm(param, 1)
