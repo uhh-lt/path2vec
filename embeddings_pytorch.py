@@ -69,8 +69,7 @@ def load_training_data(trainfile):
     return wordpairs, vocab_dict
 
 
-def save_embeddings(train_name):
-    filename = train_name + '.vec.gz'
+def save_embeddings(filename):
     # Saving the resulting vectors
     embeddings = model.state_dict()['embeddings.weight']
     if torch.cuda.is_available():
@@ -89,7 +88,7 @@ if __name__ == "__main__":
     parser.add_argument('--vocab_file', help='[optional] gzipped JSON file with the vocabulary (list of words)')
     # If the vocabulary file is not provided, it will be inferred from the training set
     # (can be painfully slow for large datasets)
-    parser.add_argument('--fix_seeds', type=bool, default=True, help='fix seeds to ensure repeatability')
+    parser.add_argument('--fix_seeds', type=bool, default=False, help='fix seeds to ensure repeatability')
     parser.add_argument('--use_neighbors', type=bool, default=False,
                         help='whether or not to use the neighbor nodes-based regularizer')
     parser.add_argument('--neighbor_count', type=int, default=3,
@@ -97,6 +96,7 @@ if __name__ == "__main__":
     parser.add_argument('--negative_count', type=int, default=3, help='number of negative samples')
     parser.add_argument('--epochs', type=int, default=10, help='number of training epochs')
     parser.add_argument('--regularize', type=bool, default=False, help='L1 regularization of embeddings')
+    parser.add_argument('--name', default='graph_emb', help='Run name, to be used in the file name')
     parser.add_argument('--l1factor', type=float, default=1e-10, help='L1 regularizer coefficient')
     parser.add_argument('--beta', type=float, default=0.01, help='neighbors-based regularizer first coefficient')
     parser.add_argument('--gamma', type=float, default=0.01, help='neighbors-based regularizer second coefficient')
@@ -108,6 +108,7 @@ if __name__ == "__main__":
     learn_rate = args.lrate   # Learning rate
     neighbors_count = args.neighbor_count
     negative = args.negative_count
+    run_name = args.name
     l1_factor = args.l1factor
     beta = args.beta
     gamma = args.gamma
@@ -214,6 +215,7 @@ if __name__ == "__main__":
     train_name = trainfile.split('.')[0] + '_embeddings_vsize' + str(embedding_dimension) +'_bsize' + str(batch_size) \
                  + '_lr' + str(learn_rate).split('.')[-1]+'_nn-'+str(args.use_neighbors)+str(args.neighbor_count)+\
                  '_reg-'+str(args.regularize)
-    save_embeddings(train_name)
+    filename = train_name + '_' + run_name + '.vec.gz'
+    save_embeddings(filename)
     
     
