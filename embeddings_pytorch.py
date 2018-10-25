@@ -76,45 +76,8 @@ def save_embeddings(filename):
         embeddings = embeddings.cpu()
     helpers.save_word2vec_format(filename, vocab_dict, embeddings.numpy())
     
-    
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Learning graph embeddings with path2vec')
-    parser.add_argument('--input_file', required=True,
-                        help='tab-separated gzipped file with training pairs and their similarities')
-    parser.add_argument('--vsize', type=int, default=300, help='vector size')
-    parser.add_argument('--bsize', type=int, default=100, help='batch size')
-    parser.add_argument('--lrate', type=float, default=0.001, help='learning rate')
-    parser.add_argument('--vocab_file', help='[optional] gzipped JSON file with the vocabulary (list of words)')
-    # If the vocabulary file is not provided, it will be inferred from the training set
-    # (can be painfully slow for large datasets)
-    parser.add_argument('--fix_seeds', type=bool, default=False, help='fix seeds to ensure repeatability')
-    parser.add_argument('--use_neighbors', type=bool, default=False,
-                        help='whether or not to use the neighbor nodes-based regularizer')
-    parser.add_argument('--neighbor_count', type=int, default=3,
-                        help='number of adjacent nodes to consider for regularization')
-    parser.add_argument('--negative_count', type=int, default=3, help='number of negative samples')
-    parser.add_argument('--epochs', type=int, default=10, help='number of training epochs')
-    parser.add_argument('--regularize', type=bool, default=False, help='L1 regularization of embeddings')
-    parser.add_argument('--name', default='graph_emb', help='Run name, to be used in the file name')
-    parser.add_argument('--l1factor', type=float, default=1e-10, help='L1 regularizer coefficient')
-    parser.add_argument('--beta', type=float, default=0.01, help='neighbors-based regularizer first coefficient')
-    parser.add_argument('--gamma', type=float, default=0.01, help='neighbors-based regularizer second coefficient')
-    args = parser.parse_args()
-    
-    trainfile = args.input_file  # Gzipped file with pairs and their similarities
-    embedding_dimension = args.vsize  # vector size (for example, 20)
-    batch_size = args.bsize      # number of pairs in a batch (for example, 10)
-    learn_rate = args.lrate   # Learning rate
-    neighbors_count = args.neighbor_count
-    negative = args.negative_count
-    run_name = args.name
-    l1_factor = args.l1factor
-    beta = args.beta
-    gamma = args.gamma
-    
-    print('Using adjacent nodes regularization: ', args.use_neighbors)
-    
+ 
+def run(trainfile, embedding_dimension, batch_size, learn_rate, neighbors_count, negative, run_name, l1_factor, beta, gamma):    
     if args.fix_seeds:
         #fix seeds for repeatability of experiments
         np.random.seed(42)
@@ -218,4 +181,54 @@ if __name__ == "__main__":
     filename = train_name + '_' + run_name + '.vec.gz'
     save_embeddings(filename)
     
+       
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Learning graph embeddings with path2vec')
+    parser.add_argument('--input_file', required=True,
+                        help='tab-separated gzipped file with training pairs and their similarities')
+    parser.add_argument('--vsize', type=int, default=300, help='vector size')
+    parser.add_argument('--bsize', type=int, default=100, help='batch size')
+    parser.add_argument('--lrate', type=float, default=0.001, help='learning rate')
+    parser.add_argument('--vocab_file', help='[optional] gzipped JSON file with the vocabulary (list of words)')
+    # If the vocabulary file is not provided, it will be inferred from the training set
+    # (can be painfully slow for large datasets)
+    parser.add_argument('--fix_seeds', type=bool, default=False, help='fix seeds to ensure repeatability')
+    parser.add_argument('--use_neighbors', type=bool, default=False,
+                        help='whether or not to use the neighbor nodes-based regularizer')
+    parser.add_argument('--neighbor_count', type=int, default=3,
+                        help='number of adjacent nodes to consider for regularization')
+    parser.add_argument('--negative_count', type=int, default=3, help='number of negative samples')
+    parser.add_argument('--epochs', type=int, default=10, help='number of training epochs')
+    parser.add_argument('--regularize', type=bool, default=False, help='L1 regularization of embeddings')
+    parser.add_argument('--name', default='graph_emb', help='Run name, to be used in the file name')
+    parser.add_argument('--l1factor', type=float, default=1e-10, help='L1 regularizer coefficient')
+    parser.add_argument('--beta', type=float, default=0.01, help='neighbors-based regularizer first coefficient')
+    parser.add_argument('--gamma', type=float, default=0.01, help='neighbors-based regularizer second coefficient')
+    args = parser.parse_args()
     
+    trainfile = args.input_file  # Gzipped file with pairs and their similarities
+    embedding_dimension = args.vsize  # vector size (for example, 20)
+    batch_size = args.bsize      # number of pairs in a batch (for example, 10)
+    learn_rate = args.lrate   # Learning rate
+    neighbors_count = args.neighbor_count
+    negative = args.negative_count
+    run_name = args.name
+    l1_factor = args.l1factor
+    beta = args.beta
+    gamma = args.gamma
+    
+    print('Using adjacent nodes regularization: ', args.use_neighbors)
+    
+    run(trainfile = args.input_file,
+        embedding_dimension = args.vsize,
+        batch_size = args.bsize,
+        learn_rate = args.lrate,
+        neighbors_count = args.neighbor_count,
+        negative = args.negative_count,
+        run_name = args.name,
+        l1_factor = args.l1factor,
+        beta = args.beta,
+        gamma = args.gamma)
+    
+
