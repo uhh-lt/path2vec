@@ -36,6 +36,7 @@ class Path2VecModel(nn.Module):
         return out
     
     
+    
 def custom_loss(y_pred, y_true, reg_1_output, reg_2_output, use_neighbors, beta=0.01, gamma=0.01):
     if use_neighbors:
         alpha = 1 - (beta+gamma)
@@ -49,15 +50,15 @@ def custom_loss(y_pred, y_true, reg_1_output, reg_2_output, use_neighbors, beta=
     return m_loss
 
 
-def load_training_data(trainfile):
+def load_training_data(trainfile, vocab_file):
     wordpairs = helpers.Wordpairs(trainfile)
     
-    if not args.vocab_file:
+    if not vocab_file:
         print('Building vocabulary from the training set...', file=sys.stderr)
         no_train_pairs, vocab_dict, inverted_vocabulary = helpers.build_vocabulary(wordpairs)
         print('Building vocabulary finished', file=sys.stderr)
     else:
-        vocabulary_file = args.vocab_file  # JSON file with the ready-made vocabulary
+        vocabulary_file = vocab_file  # JSON file with the ready-made vocabulary
         print('Loading vocabulary from file', vocabulary_file, file=sys.stderr)
         vocab_dict, inverted_vocabulary = helpers.vocab_from_file(vocabulary_file)
         print('Counting the number of pairs in the training set...')
@@ -69,7 +70,7 @@ def load_training_data(trainfile):
     return wordpairs, vocab_dict
 
 
-def save_embeddings(filename):
+def save_embeddings(filename, model, vocab_dict):
     # Saving the resulting vectors
     embeddings = model.state_dict()['embeddings.weight']
     if torch.cuda.is_available():
@@ -77,8 +78,9 @@ def save_embeddings(filename):
     helpers.save_word2vec_format(filename, vocab_dict, embeddings.numpy())
     
  
-def run(trainfile, embedding_dimension, batch_size, learn_rate, neighbors_count, negative, run_name, l1_factor, beta, gamma):    
-    if args.fix_seeds:
+def run(trainfile, vocab_file, embedding_dimension, batch_size, learn_rate, neighbors_count, negative, run_name, 
+        l1_factor, beta, gamma, fix_seeds, epochs, use_neighbors, regularize):    
+    if fix_seeds:
         #fix seeds for repeatability of experiments
         np.random.seed(42)
         rn.seed(12345)
@@ -86,7 +88,7 @@ def run(trainfile, embedding_dimension, batch_size, learn_rate, neighbors_count,
         if torch.cuda.is_available():
             torch.cuda.manual_seed(1)
     
-    wordpairs, vocab_dict = load_training_data(trainfile)
+    wordpairs, vocab_dict = load_training_data(trainfile, vocab_file)
     
     print('Retreiving neighbors of training samples...')
     helpers.build_connections(vocab_dict)
@@ -107,7 +109,7 @@ def run(trainfile, embedding_dimension, batch_size, learn_rate, neighbors_count,
     print(model)
     
     #begin the training..
-    for epoch in range(args.epochs):
+    for epoch in range(epochs):
         print('Epoch #', epoch+1)
         total_loss, n_batches = 0, 0
         batchGenerator = helpers.batch_generator_2(wordpairs, vocab_dict, vocab_size, negative, batch_size)
@@ -127,7 +129,7 @@ def run(trainfile, embedding_dimension, batch_size, learn_rate, neighbors_count,
             #do the forward pass
             similarity_pred = model(input_var)
 
-            if args.use_neighbors:
+            if use_neighbors:
                 #get only the positive samples because the batch variable contains the generated negatives as well
                 positive_samples = helpers.get_current_positive_samples()
                 inputs_list = [[], []]
@@ -159,8 +161,8 @@ def run(trainfile, embedding_dimension, batch_size, learn_rate, neighbors_count,
                 reg2_output = torch.sum(reg2_dot_prod) / len(reg2_dot_prod)
                    
             # Compute the loss function. 
-            loss = custom_loss(similarity_pred, target_tensor, reg1_output, reg2_output, args.use_neighbors, beta, gamma)
-            if args.regularize == True:
+            loss = custom_loss(similarity_pred, target_tensor, reg1_output, reg2_output, use_neighbors, beta, gamma)
+            if regularize == True:
                 for param in model.parameters():
                     l1_reg_term += torch.norm(param, 1)
                 loss += l1_factor * l1_reg_term
@@ -179,7 +181,7 @@ def run(trainfile, embedding_dimension, batch_size, learn_rate, neighbors_count,
                  + '_lr' + str(learn_rate).split('.')[-1]+'_nn-'+str(args.use_neighbors)+str(args.neighbor_count)+\
                  '_reg-'+str(args.regularize)
     filename = train_name + '_' + run_name + '.vec.gz'
-    save_embeddings(filename)
+    save_embeddings(filename, model, vocab_dict)
     
        
 
@@ -221,6 +223,7 @@ if __name__ == "__main__":
     print('Using adjacent nodes regularization: ', args.use_neighbors)
     
     run(trainfile = args.input_file,
+        vocab_file = args.vocab_file,
         embedding_dimension = args.vsize,
         batch_size = args.bsize,
         learn_rate = args.lrate,
@@ -229,6 +232,10 @@ if __name__ == "__main__":
         run_name = args.name,
         l1_factor = args.l1factor,
         beta = args.beta,
-        gamma = args.gamma)
+        gamma = args.gamma,
+        fix_seeds = args.fix_seeds,
+        epochs = args.epochs,
+        use_neighbors = args.use_neighbors,
+        regularize = args.regularize)
     
 
