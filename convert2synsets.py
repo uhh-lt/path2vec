@@ -5,18 +5,7 @@ import sys
 from itertools import product
 from nltk.corpus import wordnet as wn
 from nltk.corpus import wordnet_ic
-
-
-def calc_similarity(syn_pair, sim_method, infcont):
-    syns0 = syn_pair[0]
-    syns1 = syn_pair[1]
-    if sim_method == 'jcn':
-        similarity = syns0.jcn_similarity(syns1, infcont)  # Jiang-Conrath
-    elif sim_method == 'lch':
-        similarity = syns0.lch_similarity(syns1)  # Leacock-Chodorow
-    else:
-        return None
-    return similarity
+from compute_paths import calc_similarity
 
 
 if __name__ == '__main__':
@@ -31,7 +20,10 @@ if __name__ == '__main__':
     maxval = 1000.0  # This value will be assigned to extremely high-similarity pairs (like 1e+300)
 
 
-    ic = wordnet_ic.ic('ic-%s.dat' % corpus)
+    if  corpus != 'None':
+        ic = wordnet_ic.ic('ic-%s.dat' % corpus)
+    else:
+        ic = None
 
     for line in sys.stdin:
         if line.strip().startswith('#'):
@@ -46,7 +38,7 @@ if __name__ == '__main__':
         for pair in product(synsets0, synsets1):
             if pair[0] == pair[1]:
                 continue
-            wordnet_sim = calc_similarity(pair, method, ic)
+            wordnet_sim = calc_similarity(pair, method, infcont=ic)
             if wordnet_sim > best_sim:
                 best_pair = pair
                 best_sim = wordnet_sim

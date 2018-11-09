@@ -11,17 +11,22 @@ from math import factorial
 from multiprocessing import Pool
 
 
-def calc_similarity(pair):
-    syns0 = wn.synset(pair[0])
-    syns1 = wn.synset(pair[1])
+def calc_similarity(pair, method, infcont=None, printing=False):
+    syns0 = pair[0]
+    syns1 = pair[1]
     if method == 'jcn':
-        similarity = syns0.jcn_similarity(syns1, ic)  # Jiang-Conrath
+        similarity = syns0.jcn_similarity(syns1, infcont)  # Jiang-Conrath
     elif method == 'lch':
         similarity = syns0.lch_similarity(syns1)  # Leacock-Chodorow
+    elif method == 'path':
+        similarity = syns0.path_similarity(syns1)  # Shortest path
+    elif method == 'wup':
+        similarity = syns0.wup_similarity(syns1)   # Wu-Palmer
     else:
         return None
-    if similarity > 0.01:
-        print(pair[0] + '\t' + pair[1] + '\t'+str(similarity)+'\n')
+    if printing:
+        if similarity > 0.01:
+            print(pair[0] + '\t' + pair[1] + '\t'+str(similarity)+'\n')
     return similarity
 
 
@@ -34,6 +39,8 @@ if __name__ == '__main__':
         ic = wordnet_ic.ic('ic-semcor.dat')
     elif corpus == 'brown':
         ic = wordnet_ic.ic('ic-brown.dat')
+    else:
+        ic = None
     synsets = list(wn.all_synsets('n'))
     synsets = [s.name() for s in synsets]
     print('Total synsets:', len(synsets), file=sys.stderr)
@@ -51,7 +58,7 @@ if __name__ == '__main__':
     start = time.time()
 
     with Pool(cores) as p:
-        for i in p.imap_unordered(calc_similarity, synset_pairs, chunksize=100):
+        for i in p.imap_unordered(calc_similarity, synset_pairs, ic=ic, chunksize=100):
             counter += 1
             if counter % 100000 == 0:
                 print(counter, 'out of', pairs, file=sys.stderr)

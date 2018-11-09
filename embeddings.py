@@ -105,13 +105,6 @@ if __name__ == "__main__":
     # person.n.01     lover.n.03       0.22079177574204348
     valid_examples = ['measure.n.02', 'fundamental_quantity.n.01', 'person.n.01', 'lover.n.03']
 
-    # TODO: how to properly initialize weights?
-    # generate embedding matrix with all values between -0.5d, 0.5d
-    # w_embedding = np.random.uniform(
-    # -0.5 / embedding_dimension, 0.5 / embedding_dimension, (vocab_size, embedding_dimension))
-    # word_embedding_layer = Embedding(
-    # input_dim=vocab_size, output_dim=embedding_dimension, weights=[w_embedding], name='Word_embeddings')
-
     # For now, let's use Keras defaults for initialization:
     if args.regularize:
         word_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1, name='Word_embeddings',
