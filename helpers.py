@@ -46,14 +46,13 @@ def build_connections(vocab_dict):
         synset = wn.synset(vocab)
         hypernyms = synset.hypernyms()
         hyponyms = synset.hyponyms()
-        # holonyms = synset.member_holonyms()
-        holonyms = []
 
-        neighbors = set(hypernyms + hyponyms + holonyms)
-
-        for neighbor in neighbors:
-            if vocab_dict[neighbor.name()]:
-                neighbor_nodes.append(vocab_dict[neighbor.name()])
+        for hypernym in hypernyms:
+            if vocab_dict[hypernym.name()]:
+                neighbor_nodes.append(vocab_dict[hypernym.name()])
+        for hyponym in hyponyms:
+            if vocab_dict[hyponym.name()]:
+                neighbor_nodes.append(vocab_dict[hyponym.name()])
 
         neighbors_dict[index] = neighbor_nodes
         neighbor_nodes = []
