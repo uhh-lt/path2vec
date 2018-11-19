@@ -18,6 +18,7 @@ For example, to evaluate on the shortest path metrics (`shp'):
 `python3 evaluation.py shp_thresh01-near50_embeddings_vsize300_bsize100_lr001_nn-True3_reg-True_shp.vec.gz simlex/simlex_shp.tsv simlex/simlex_synsets/max_shp_human.tsv`
 
 `Model  Wordnet Static  Dynamic`
+
 `shp_thresh01-near50_vsize300_bsize100_lr001_nn-True3_reg-True_shp 0.9473  0.5121  0.5551`
 
 The resuting score 0.9473 is the Spearman rank correlation between model-produced similarities and WordNet similarities (using SIMFILE0). The second score 0.5121 is calculated on SIMFILE1 (human judgments). The 3rd score (0.5551 in the example) is always calculated on the original Simlex with dynamically selected synsets (see below for details).
