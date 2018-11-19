@@ -7,21 +7,20 @@ We present a new approach for learning graph embeddings, that relies on structur
 
 # Models evaluation
 
-`python3 evaluation.py MODELFILE SIMFILE`
+`python3 evaluation.py MODELFILE SIMFILE0 SIMFILE1`
 
 MODELFILE is the file with synset vectors in word2vec text format.
 
-SIMFILE is one of semantic similarity datasets in https://github.com/uhh-lt/shortpath2vec/blob/master/simlex/simlex_synsets/
+SIMFILE is one of semantic similarity datasets in https://github.com/uhh-lt/path2vec/tree/master/simlex or https://github.com/uhh-lt/path2vec/tree/master/simlex/simlex_synsets. It is expected that SIMFILE0 will be from the first directory (Wordnet similarities), and SIMFILE1 will be from the second one (SimLex999 similarities), and that they correspond to the graph distance metrics on which the model was trained. The model will be tested on both of these test sets, and additionally on the raw SimLex999 (dynamically assigning synsets to lemmas).
 
-For example:
+For example, to evaluate on the shortest path metrics (`shp'):
 
-`python3 evaluation.py jcn_semcor_thresh01_embeddings_vsize200_bsize100_lr001.vec.gz simlex/simlex_synsets/max_jcn_semcor_human.tsv`
+`python3 evaluation.py shp_thresh01-near50_embeddings_vsize300_bsize100_lr001_nn-True3_reg-True_shp.vec.gz simlex/simlex_shp.tsv simlex/simlex_synsets/max_shp_human.tsv`
 
-`jcn_semcor_thresh01_vsize200_bsize100_lr001     0.46397722955881243     0.4503616841776444`
+`Model  Wordnet Static  Dynamic`
+`shp_thresh01-near50_vsize300_bsize100_lr001_nn-True3_reg-True_shp 0.9473  0.5121  0.5551`
 
-The resuting score (0.464 in the example) is the Spearman rank correlation between model-produced similarities and human judgments.
-The second score (0.450 in the example) is always calculated on the original Simlex with dynamically selected synsets
-(see below for details).
+The resuting score 0.9473 is the Spearman rank correlation between model-produced similarities and WordNet similarities (using SIMFILE0). The second score 0.5121 is calculated on SIMFILE1 (human judgments). The 3rd score (0.5551 in the example) is always calculated on the original Simlex with dynamically selected synsets (see below for details).
 
 # Evaluation with dynamic synset selection
 
