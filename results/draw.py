@@ -21,7 +21,7 @@ for line in sys.stdin:
     (corpus, vsize, bsize, lrate, wordnet, human, dynamic_human) = res
     if lrate != '0.005':
         continue
-    if float(bsize) < 20 or float(bsize) > 400 or float(bsize) == 25:
+    if float(bsize) < 100 or float(bsize) > 366:
         continue
     lrates.append(lrate)
     vsize = float(vsize)
@@ -59,7 +59,8 @@ for batch in sorted(diff_bsizes):
     elif int(batch) == 366:
         label = 'node2vec'
     else:
-        label = 'path2vec, batch ' + str(int(batch))
+        #label = 'path2vec, batch ' + str(int(batch))
+        label = 'path2vec'
     plt.plot(x, y, linestyle='dashed', marker='o', label=label)
 plt.xlabel('Vector size')
 plt.ylabel('Spearman rank correlation on SimLex999')
@@ -80,7 +81,8 @@ for batch in sorted(diff_bsizes):
     elif int(batch) == 366:
         label = 'node2vec'
     else:
-        label = 'path2vec, batch ' + str(int(batch))
+        #label = 'path2vec, batch ' + str(int(batch))
+        label = 'path2vec'
     plt.plot(x, y, linestyle='dashed', marker='o', label=label)
 plt.xlabel('Vector size')
 plt.ylabel('Spearman rank correlation on SimLex999')
