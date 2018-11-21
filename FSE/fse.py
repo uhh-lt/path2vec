@@ -18,7 +18,7 @@ def hamming_distance(s0, s1):
 
 if __name__ == '__main__':
     modelfile = sys.argv[1]
-    # pairsfile = sys.argv[2]
+    pairsfile = sys.argv[2]
     model = {}
     for line in utils.smart_open(modelfile):
         line = utils.to_unicode(line)
@@ -27,14 +27,14 @@ if __name__ == '__main__':
         model[synset] = vector
     print('Model:', len(model), file=sys.stderr)
 
-    a = model['person.n.01']
-    b = [model[i] for i in model]
-    start = time.time()
-    hammings = [hamming_distance(a, i) for i in b]
-    end = time.time()
-    print(len(hammings))
-    print('Time:', end-start)
-    exit()
+    # a = model['person.n.01']
+    # b = [model[i] for i in model]
+    # start = time.time()
+    # hammings = [hamming_distance(a, i) for i in b]
+    # end = time.time()
+    # print(len(hammings))
+    # print('Time:', end-start)
+    # exit()
 
     pairs = []
     for line in utils.smart_open(pairsfile):
@@ -62,8 +62,6 @@ if __name__ == '__main__':
         pairs.append((best_pair[0].name(), best_pair[1].name(), sim, str(best_sim)))
 
     print('Pairs ready:', len(pairs), file=sys.stderr)
-
-    
 
     #print('Similarities calculated', file=sys.stderr)
 
