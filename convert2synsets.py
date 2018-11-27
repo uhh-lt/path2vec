@@ -7,9 +7,8 @@ from nltk.corpus import wordnet as wn
 from nltk.corpus import wordnet_ic
 from compute_paths import calc_similarity
 
-
 if __name__ == '__main__':
-    method = sys.argv[1]  # jcn or lch
+    method = sys.argv[1]  # jcn or lch or path or wup
     corpus = sys.argv[2]  # semcor or brown
 
     preserve = False  # Preserve SimLex similarities?
@@ -19,8 +18,7 @@ if __name__ == '__main__':
 
     maxval = 1000.0  # This value will be assigned to extremely high-similarity pairs (like 1e+300)
 
-
-    if  corpus != 'None':
+    if corpus != 'None':
         ic = wordnet_ic.ic('ic-%s.dat' % corpus)
     else:
         ic = None
@@ -52,17 +50,9 @@ if __name__ == '__main__':
         if preserve:
             best_sim = simlex_sim
         if best_sim > 1000:
-                print('Clipped similarity to %f' % maxval, best_pair, best_sim, file=sys.stderr)
-                best_sim = maxval
+            print('Clipped similarity to %f' % maxval, best_pair, best_sim, file=sys.stderr)
+            best_sim = maxval
         if best_sim < 0.0001:
-                print('Clipped similarity to 0.0', best_pair, best_sim, file=sys.stderr)
-                best_sim = 0.0
-        print('\t'.join([s.name() for s in best_pair])+'\t'+str(best_sim))
-
-
-
-
-
-
-
-
+            print('Clipped similarity to 0.0', best_pair, best_sim, file=sys.stderr)
+            best_sim = 0.0
+        print('\t'.join([s.name() for s in best_pair]) + '\t' + str(best_sim))
