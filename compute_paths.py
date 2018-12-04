@@ -6,21 +6,22 @@ from itertools import combinations
 from nltk.corpus import wordnet as wn
 from nltk.corpus import wordnet_ic
 import time
+from functools import partial
 import multiprocessing
 from math import factorial
 from multiprocessing import Pool
 
 
-def calc_similarity(pair, method, infcont=None, printing=False):
-    syns0 = pair[0]
-    syns1 = pair[1]
-    if method == 'jcn':
+def calc_similarity(pair, metrics='lch', infcont=None, printing=False):
+    syns0 = wn.synset(pair[0])
+    syns1 = wn.synset(pair[1])
+    if metrics == 'jcn':
         similarity = syns0.jcn_similarity(syns1, infcont)  # Jiang-Conrath
-    elif method == 'lch':
+    elif metrics == 'lch':
         similarity = syns0.lch_similarity(syns1)  # Leacock-Chodorow
-    elif method == 'path':
+    elif metrics == 'path':
         similarity = syns0.path_similarity(syns1)  # Shortest path
-    elif method == 'wup':
+    elif metrics == 'wup':
         similarity = syns0.wup_similarity(syns1)   # Wu-Palmer
     else:
         return None
@@ -52,13 +53,16 @@ if __name__ == '__main__':
     pairs = factorial(len(synsets)) // factorial(2) // factorial(len(synsets) - 2)
     print(pairs, file=sys.stderr)
 
-    synset_pairs = combinations(synsets, 2)
+    # synset_pairs = combinations(synsets, 2)
+    synset_pairs = [(synsets[100], i) for i in synsets]
+    print(len(synset_pairs))
 
     counter = 0
     start = time.time()
 
     with Pool(cores) as p:
-        for i in p.imap_unordered(calc_similarity, synset_pairs, ic=ic, chunksize=100):
+        func = partial(calc_similarity, metrics=method, infcont=ic)
+        for i in p.imap_unordered(func, synset_pairs, chunksize=100):
             counter += 1
             if counter % 100000 == 0:
                 print(counter, 'out of', pairs, file=sys.stderr)
