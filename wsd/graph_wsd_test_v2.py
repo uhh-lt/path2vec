@@ -16,7 +16,7 @@ import codecs
 from sklearn.metrics import f1_score, precision_score, recall_score
 import gensim
 import logging
-#from hamming_cython import hamming_sum
+from hamming_cython import hamming_sum
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,6 +31,7 @@ MAX_DEPTH = 3
 senseval_fpath = 'data/senseval/senseval2/senseval2.data.xml'
 gold_tags_fpath = 'data/senseval/senseval2/senseval2.gold.key.txt'
 wn_embedding_fpath = sys.argv[1]
+threshold = float(sys.argv[2])  # e.g. 0.8
 
 info_content = wordnet_ic.ic('ic-brown.dat')
 
@@ -80,7 +81,8 @@ def sentence_wsd(ids_list, sentences, poses):
         if 'fse' in wn_embedding_fpath:
             model = load_fse(wn_embedding_fpath)
         else:
-            model = gensim.models.KeyedVectors.load_word2vec_format(wn_embedding_fpath, binary=False)
+            model = gensim.models.KeyedVectors.load_word2vec_format(wn_embedding_fpath,
+                                                                    binary=False)
     else:
         model = None
     counter = 0
@@ -113,7 +115,7 @@ def sentence_wsd(ids_list, sentences, poses):
                     graph.add_node(node_name)
                     node_names.append(node_name)
                 token_node_names_map[_id] = node_names
-                graph_pos.update((label, (pos_idx, j+1)) for j, label in enumerate(node_names))
+                graph_pos.update((label, (pos_idx, j + 1)) for j, label in enumerate(node_names))
                 pos_idx += 1
 
         # compute word similarity
@@ -142,20 +144,24 @@ def sentence_wsd(ids_list, sentences, poses):
                                     if VECTORIZED_SIMILARITY:
                                         if 'fse' in wn_embedding_fpath:
                                             sim_dict[nodes] = hamming_distance(
-                                                (current_synset.name(), neighbor_synset.name()), model)
+                                                (current_synset.name(), neighbor_synset.name()),
+                                                model)
                                         else:
-                                            sim_dict[nodes] = model.wv.similarity(current_synset.name(),
-                                                                                  neighbor_synset.name())
+                                            sim_dict[nodes] = model.wv.similarity(
+                                                current_synset.name(),
+                                                neighbor_synset.name())
                                     else:
                                         if USE_JCN:
-                                            sim_dict[nodes] = jcn_similarity(current_synset, neighbor_synset)
+                                            sim_dict[nodes] = jcn_similarity(current_synset,
+                                                                             neighbor_synset)
                                         else:
-                                            sim_dict[nodes] = lch_similarity(current_synset, neighbor_synset)
+                                            sim_dict[nodes] = lch_similarity(current_synset,
+                                                                             neighbor_synset)
                     i += 1
 
         # build the edges with the weights
         for key in sim_dict:
-            if sim_dict[key]>0.8:
+            if sim_dict[key] > threshold:
                 node_ids = key.split(';')
                 graph.add_edge(node_ids[0], node_ids[1], weight=sim_dict[key])
 
@@ -189,34 +195,38 @@ def sentence_wsd(ids_list, sentences, poses):
         for node in graph:
             if node in selected_nodes:
                 color_map.append('red')
-            else: color_map.append('lightblue') 
+            else:
+                color_map.append('lightblue')
 
-        # add the weight as attribute to the nodes of the graph
+            # add the weight as attribute to the nodes of the graph
         # for node in node_scores.keys():
         #   G.node[node]['weight']=node_scores[node]
 
-#        counter += 1
-#        if counter==1: #draw the graph of the first sentence
-#            plt.close()
-#            nx.draw_networkx_nodes(graph, pos=graph_pos, node_size=800, node_color=color_map)
-#            labels = {}
-#            for node_name in graph.nodes():
-#                labels[str(node_name)] =str(node_name)
-#            nx.draw_networkx_labels(graph, graph_pos,labels,font_size=13)
-#            weights = nx.get_edge_attributes(graph,'weight')
-#            cnt=0
-#            for i, _id in enumerate(sentence_ids):
-#                if _id in token_node_names_map:
-#                    plt.text(cnt,0, s=sentence[i], horizontalalignment='center', fontsize=10, fontweight='bold')
-#                    cnt += 1
-#            unique_weights = list(set(weights.values()))
-#            for weight in unique_weights:
-#                weighted_edges = [(node1,node2) for (node1,node2,edge_attr) in graph.edges(data=True) if edge_attr['weight']==weight]
-#                width = weight*3
-#                nx.draw_networkx_edges(graph, graph_pos, edgelist=weighted_edges,width=width, edge_color='b')
-#            plt.axis('off')
-#            plt.show()
-#        graph.clear()
+    #        counter += 1
+    #        if counter==1: #draw the graph of the first sentence
+    #            plt.close()
+    #            nx.draw_networkx_nodes(graph, pos=graph_pos, node_size=800, node_color=color_map)
+    #            labels = {}
+    #            for node_name in graph.nodes():
+    #                labels[str(node_name)] =str(node_name)
+    #            nx.draw_networkx_labels(graph, graph_pos,labels,font_size=13)
+    #            weights = nx.get_edge_attributes(graph,'weight')
+    #            cnt=0
+    #            for i, _id in enumerate(sentence_ids):
+    #                if _id in token_node_names_map:
+    #                    plt.text(cnt,0, s=sentence[i], horizontalalignment='center',
+    # fontsize=10, fontweight='bold')
+    #                    cnt += 1
+    #            unique_weights = list(set(weights.values()))
+    #            for weight in unique_weights:
+    #                weighted_edges = [(node1,node2) for (node1,node2,edge_attr)
+    # in graph.edges(data=True) if edge_attr['weight']==weight]
+    #                width = weight*3
+    #                nx.draw_networkx_edges(graph, graph_pos,
+    # edgelist=weighted_edges,width=width, edge_color='b')
+    #            plt.axis('off')
+    #            plt.show()
+    #        graph.clear()
 
     return output_dict
 
@@ -233,7 +243,8 @@ def load_senseval_data(file_path):
     for text in root:
         for sentence in text:
             for word in sentence:
-                if word.tag == 'instance' and word.attrib['id']:  # only include words with the <instance> tag
+                # only include words with the <instance> tag
+                if word.tag == 'instance' and word.attrib['id']:
                     identifiers.append(word.attrib['id'])
                     tokens.append(word.text)
                     pos.append(word.attrib['pos'])
