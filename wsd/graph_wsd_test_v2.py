@@ -13,7 +13,7 @@ from nltk.corpus import wordnet_ic
 import xml.etree.ElementTree as ElementTree
 from collections import OrderedDict
 import codecs
-from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, classification_report
 import gensim
 import logging
 from hamming_cython import hamming_sum
@@ -281,8 +281,14 @@ if __name__ == "__main__":
 
     assert len(wsd_output) == len(gold_output)
 
+    print(len(wsd_output))
+
     f1 = f1_score(gold_output, wsd_output, average=AVG_METHOD)
+    macro_f1 = f1_score(gold_output, wsd_output, average='macro')
     precision = precision_score(gold_output, wsd_output, average=AVG_METHOD)
     recall = recall_score(gold_output, wsd_output, average=AVG_METHOD)
+    accuracy = accuracy_score(gold_output, wsd_output)
 
-    print('F-score: %1.4f' % f1, '  Precision: %1.4f' % precision, '  Recall: %1.4f' % recall)
+    print('F-score: %1.4f' % f1, '  Precision: %1.4f' % precision, '  Recall: %1.4f' % recall, '    Accuracy: %1.4f' % accuracy)
+    # print(classification_report(gold_output, wsd_output))
+    print('Macro F-score: %1.4f' % macro_f1)

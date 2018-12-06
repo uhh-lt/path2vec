@@ -21,10 +21,12 @@ for line in sys.stdin:
     (corpus, vsize, bsize, lrate, wordnet, human, dynamic_human) = res
     if lrate != '0.005':
         continue
-    if float(bsize) < 100 or float(bsize) > 366:
+    if float(bsize) < 100 or float(bsize) > 366 or float(bsize) == 265:
         continue
     lrates.append(lrate)
     vsize = float(vsize)
+    if vsize < 100:
+        continue
     vectorsizes.append(vsize)
     bsize = float(bsize)
     batchsizes.append(bsize)
@@ -50,7 +52,7 @@ human_scores = np.array(human_scores)
 dhuman_scores = np.array(dhuman_scores)
 
 plt.figure()
-plt.plot((0, np.max(vectorsizes)), (graph_score, graph_score), 'red', label='Pure WordNet')
+plt.plot((50, np.max(vectorsizes)), (graph_score, graph_score), 'red', label='Pure WordNet')
 for batch in sorted(diff_bsizes):
     x = vectorsizes[batchsizes == batch]
     y = human_scores[batchsizes == batch]
@@ -58,6 +60,10 @@ for batch in sorted(diff_bsizes):
         label = 'Deepwalk'
     elif int(batch) == 366:
         label = 'node2vec'
+    elif int(batch) == 266:
+        label = 'TransR'
+    elif int(batch) == 265:
+        label = 'TransD'
     else:
         #label = 'path2vec, batch ' + str(int(batch))
         label = 'path2vec'
@@ -72,7 +78,7 @@ plt.savefig(corpus + '_static_synsets.png', dpi=300)
 plt.close()
 
 plt.figure()
-plt.plot((0, np.max(vectorsizes)), (graph_score, graph_score), 'red', label='Pure WordNet')
+plt.plot((50, np.max(vectorsizes)), (graph_score, graph_score), 'red', label='Pure WordNet')
 for batch in sorted(diff_bsizes):
     x = vectorsizes[batchsizes == batch]
     y = dhuman_scores[batchsizes == batch]
@@ -80,6 +86,10 @@ for batch in sorted(diff_bsizes):
         label = 'Deepwalk'
     elif int(batch) == 366:
         label = 'node2vec'
+    elif int(batch) == 266:
+        label = 'TransR'
+    elif int(batch) == 265:
+        label = 'TransD'
     else:
         #label = 'path2vec, batch ' + str(int(batch))
         label = 'path2vec'
