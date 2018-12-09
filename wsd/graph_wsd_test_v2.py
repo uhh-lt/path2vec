@@ -5,35 +5,22 @@ Created on Mon May  7 17:13:25 2018
 @author: dorgham
 """
 
-import sys
-import networkx as nx
-from nltk.corpus import wordnet as wn
-from nltk.corpus import wordnet_ic
+import argparse
+import codecs
+import logging
 # import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ElementTree
 from collections import OrderedDict
-import codecs
-from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, classification_report
+
 import gensim
-import logging
+import networkx as nx
 from hamming_cython import hamming_sum
+from nltk.corpus import wordnet as wn
+from nltk.corpus import wordnet_ic
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# algorithm parameters
-USE_POS_INFO = True
-USE_JCN = True  # if False, lch is used
-VECTORIZED_SIMILARITY = True
-USE_PAGERANK = False
-AVG_METHOD = 'micro'
-MAX_DEPTH = 3
-senseval_fpath = 'data/senseval/senseval2/senseval2.data.xml'
-gold_tags_fpath = 'data/senseval/senseval2/senseval2.gold.key.txt'
-wn_embedding_fpath = sys.argv[1]
-threshold = float(sys.argv[2])  # e.g. 0.8
-
-info_content = wordnet_ic.ic('ic-brown.dat')
 
 
 def load_fse(path):
@@ -260,6 +247,36 @@ def load_senseval_data(file_path):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Word sense disambiguation')
+    parser.add_argument('--model', required=True,
+                        help='file with embeddings in word2vec format')
+    parser.add_argument('--threshold', type=float, default=0.0,
+                        help='Threshold for edge weights (e.g., 0.8)')
+    parser.add_argument('--depth', type=int, default=3)
+    parser.add_argument('--test_set',
+                        help='Which WSD test set to use (senseval2, senseval3, semeval2015)')
+    parser.add_argument('--averaging', default='micro',
+                        help='averaging type for evaluation (micro, macro, weighted)')
+    parser.add_argument('--vectorized', action="store_true", default=True,
+                        help='Use vectorized similarity')
+    parser.add_argument('--pos', action="store_true", default=True,
+                        help='Use POS info')
+
+    args = parser.parse_args()
+    wn_embedding_fpath = args.model
+    threshold = args.threshold
+    dataset = args.test_set
+    senseval_fpath = '../data/senseval/' + dataset + '/' + dataset + '.data.xml'
+    gold_tags_fpath = '../data/senseval/' + dataset + '/' + dataset + '.gold.key.txt'
+    AVG_METHOD = args.averaging
+    VECTORIZED_SIMILARITY = args.vectorized
+    USE_POS_INFO = args.pos
+    MAX_DEPTH = args.depth
+
+    USE_JCN = True  # if False, lch is used
+    USE_PAGERANK = False
+    info_content = wordnet_ic.ic('ic-semcor.dat')
+
     ids, sents, poslist = load_senseval_data(senseval_fpath)
     disambiguated = sentence_wsd(ids, sents, poslist)
     # load the gold results
@@ -281,14 +298,12 @@ if __name__ == "__main__":
 
     assert len(wsd_output) == len(gold_output)
 
-    print(len(wsd_output))
+    print('Total predictions:', len(wsd_output))
 
     f1 = f1_score(gold_output, wsd_output, average=AVG_METHOD)
-    macro_f1 = f1_score(gold_output, wsd_output, average='macro')
     precision = precision_score(gold_output, wsd_output, average=AVG_METHOD)
     recall = recall_score(gold_output, wsd_output, average=AVG_METHOD)
     accuracy = accuracy_score(gold_output, wsd_output)
 
-    print('F-score: %1.4f' % f1, '  Precision: %1.4f' % precision, '  Recall: %1.4f' % recall, '    Accuracy: %1.4f' % accuracy)
-    # print(classification_report(gold_output, wsd_output))
-    print('Macro F-score: %1.4f' % macro_f1)
+    print('F-score: %1.4f' % f1, '  Precision: %1.4f' % precision,
+          '  Recall: %1.4f' % recall, '  Accuracy: %1.4f' % accuracy)
