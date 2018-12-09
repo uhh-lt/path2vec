@@ -11,7 +11,7 @@ import logging
 # import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ElementTree
 from collections import OrderedDict
-
+from random import choice
 import gensim
 import networkx as nx
 from hamming_cython import hamming_sum
@@ -73,6 +73,7 @@ def sentence_wsd(ids_list, sentences, poses):
     else:
         model = None
     counter = 0
+    meaningful_cases = 0
     output_dict = OrderedDict()
     for index, sentence_ids in enumerate(ids_list):
         graph = nx.Graph()
@@ -168,9 +169,18 @@ def sentence_wsd(ids_list, sentences, poses):
                 for nodeName in node_names:
                     scores.append(node_scores[nodeName])
                 if scores:
-                    max_index = max(range(len(scores)), key=scores.__getitem__)
+                    if len(set(scores)) > 1 and len(scores) > 1:
+                        meaningful_cases += 1
+                        max_index = max(range(len(scores)), key=scores.__getitem__)
+                    else:
+                        if USE_RANDOM:
+                            max_index = choice(range(len(scores)))
+                        else:
+                            max_index = 0
                     max_label = node_names[max_index]
                     selected_nodes.append(max_label)
+                else:
+                    print(token_id, 'No scores at all')
             if max_label:
                 i = max_label.find(' ')
                 lemmas = wn.synset(max_label[i + 1:]).lemmas()
@@ -215,6 +225,7 @@ def sentence_wsd(ids_list, sentences, poses):
     #            plt.show()
     #        graph.clear()
 
+    print('Meaningful cases:', meaningful_cases)
     return output_dict
 
 
@@ -261,6 +272,8 @@ if __name__ == "__main__":
                         help='Use vectorized similarity')
     parser.add_argument('--pos', action="store_true", default=True,
                         help='Use POS info')
+    parser.add_argument('--random', action="store_true", default=False,
+                        help='Use random synset in case all centralities are equal')
 
     args = parser.parse_args()
     wn_embedding_fpath = args.model
@@ -272,6 +285,7 @@ if __name__ == "__main__":
     VECTORIZED_SIMILARITY = args.vectorized
     USE_POS_INFO = args.pos
     MAX_DEPTH = args.depth
+    USE_RANDOM = args.random
 
     USE_JCN = True  # if False, lch is used
     USE_PAGERANK = False
