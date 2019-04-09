@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+# coding: utf-8
+
 from gensim import models, utils
 import logging
 import sys
@@ -7,7 +9,7 @@ from nltk.corpus import wordnet as wn
 from itertools import product
 
 
-def evaluate_synsets(emb_model, pairs, logger, delimiter='\t', dummy4unknown=False):
+def evaluate_synsets(emb_model, pairs, our_logger, delimiter='\t', dummy4unknown=False):
     ok_vocab = [(w, emb_model.vocab[w]) for w in emb_model.index2word]
     ok_vocab = dict(ok_vocab)
 
@@ -28,7 +30,7 @@ def evaluate_synsets(emb_model, pairs, logger, delimiter='\t', dummy4unknown=Fal
                 a, b, sim = [word for word in line.split(delimiter)]
                 sim = float(sim)
             except (ValueError, TypeError):
-                logger.info('Skipping invalid line #%d in %s', line_no, pairs)
+                our_logger.info('Skipping invalid line #%d in %s', line_no, pairs)
                 continue
 
             # Finding correct synsets
@@ -38,12 +40,14 @@ def evaluate_synsets(emb_model, pairs, logger, delimiter='\t', dummy4unknown=Fal
             if len(list(synsets_a)) == 0 or len(list(synsets_b)) == 0:
                 oov += 1
                 if dummy4unknown:
-                    logger.debug('Zero similarity for line #%d with words with no synsets: %s', line_no, line.strip())
+                    our_logger.debug('Zero similarity for line #%d with words with no synsets: %s',
+                                     line_no, line.strip())
                     similarity_model.append(0.0)
                     similarity_gold.append(sim)
                     continue
                 else:
-                    logger.debug('Skipping line #%d with words with no synsets: %s', line_no, line.strip())
+                    our_logger.debug('Skipping line #%d with words with no synsets: %s',
+                                     line_no, line.strip())
                     continue
 
             best_pair = None
@@ -53,8 +57,8 @@ def evaluate_synsets(emb_model, pairs, logger, delimiter='\t', dummy4unknown=Fal
                 if possible_similarity > best_sim:
                     best_pair = pair
                     best_sim = possible_similarity
-            logger.debug('Original words: %s', line.strip())
-            logger.debug('Synsets chosen: %s with similarity %f', best_pair, best_sim)
+            our_logger.debug('Original words: %s', line.strip())
+            our_logger.debug('Synsets chosen: %s with similarity %f', best_pair, best_sim)
             similarity_model.append(best_sim)  # Similarity from the model
             similarity_gold.append(sim)  # Similarity from the dataset
 
@@ -66,12 +70,12 @@ def evaluate_synsets(emb_model, pairs, logger, delimiter='\t', dummy4unknown=Fal
     else:
         oov_ratio = float(oov) / (len(similarity_gold) + oov) * 100
 
-    logger.debug('Pearson correlation coefficient against %s: %f with p-value %f', pairs, pearson[0], pearson[1])
-    logger.debug(
+    our_logger.debug('Pearson correlation coefficient against %s: %f with p-value %f',
+                     pairs, pearson[0], pearson[1])
+    our_logger.debug(
         'Spearman rank-order correlation coefficient against %s: %f with p-value %f',
-        pairs, spearman[0], spearman[1]
-    )
-    logger.debug('Pairs with unknown words: %d', oov)
+        pairs, spearman[0], spearman[1])
+    our_logger.debug('Pairs with unknown words: %d', oov)
     return pearson, spearman, oov_ratio
 
 

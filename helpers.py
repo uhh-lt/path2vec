@@ -16,7 +16,7 @@ from nltk.corpus import wordnet as wn
 import random
 
 neighbors_dict = dict()
-current_pos_samples = [[],[]]
+current_pos_samples = [[], []]
 
 
 def custom_loss(reg_1_output, reg_2_output, beta=0.01, gamma=0.01):
@@ -113,7 +113,8 @@ def build_vocabulary(pairs):
     return train_pairs, vocabulary, inv_vocab
 
 
-def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighbors, neighbors_count):
+def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighbors,
+                    neighbors_count):
     """
     Generates training batches
     """
@@ -128,9 +129,11 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighb
         # 3 - target similarity
         # 4 - the same for negative samples
         samples_per_pair = 2 + 2 * nsize  # How many training instances we get from each pair
-        samples_per_batch = samples_per_pair * batch_size  # How many samples will be there in each batch
+        # How many samples will be there in each batch?
+        samples_per_batch = samples_per_pair * batch_size
 
-        inputs_list = [np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)]
+        inputs_list = [np.zeros((samples_per_batch, 1), dtype=int),
+                       np.zeros((samples_per_batch, 1), dtype=int)]
         if use_neighbors:
             for n in range(neighbors_count * 2):
                 inputs_list.append(np.zeros((samples_per_batch, 1), dtype=int))
@@ -168,9 +171,10 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighb
                         c_nbrs.append(context_word_index)
 
             # get negative samples for the current pair
-            neg_samples = get_negative_samples(current_word_index, context_word_index, vocab_size, nsize)
+            neg_samples = get_negative_samples(
+                current_word_index, context_word_index, vocab_size, nsize)
 
-            # Adding two positive examples and the corresponding negative samples to the current batch
+            # Adding 2 positive examples and the corresponding negative samples to the current batch
             for i in range(samples_per_pair):
                 batch[0][0][inst_counter] = neg_samples[0][i][0]
                 batch[0][1][inst_counter] = neg_samples[0][i][1]
@@ -180,7 +184,9 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighb
                     for n in range(neighbors_count):
                         batch[0][n + neighbors_count + 2][inst_counter] = c_nbrs[n]
                 pred_sim = neg_samples[1][i]
-                if pred_sim != 0:  # if this is a positive example, replace 1 with the real similarity from the file
+
+                # if this is a positive example, replace 1 with the real similarity from the file:
+                if pred_sim != 0:
                     pred_sim = sim
                 batch[1][inst_counter] = pred_sim
                 inst_counter += 1
@@ -190,7 +196,8 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighb
                 if timing:
                     print('Batch generation took', end - start, file=sys.stderr)
                 inst_counter = 0
-                inputs_list = [np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)]
+                inputs_list = [np.zeros((samples_per_batch, 1), dtype=int),
+                               np.zeros((samples_per_batch, 1), dtype=int)]
                 if use_neighbors:
                     for n in range(neighbors_count * 2):
                         inputs_list.append(np.zeros((samples_per_batch, 1), dtype=int))
@@ -206,9 +213,11 @@ def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size):
     timing = False  # Whether to print out batch generation time
 
     samples_per_pair = 2 + 2 * nsize  # How many training instances we get from each pair
-    samples_per_batch = samples_per_pair * batch_size  # How many samples will be there in each batch
+    # How many samples will be there in each batch?
+    samples_per_batch = samples_per_pair * batch_size
 
-    inputs_list = [np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)]
+    inputs_list = [np.zeros((samples_per_batch, 1), dtype=int),
+                   np.zeros((samples_per_batch, 1), dtype=int)]
 
     # Batch should be a tuple of inputs and targets. First we create it empty:
     batch = (inputs_list, np.zeros((samples_per_batch, 1)))
@@ -232,7 +241,8 @@ def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size):
         current_pos_samples[1].append(context_word_index)
 
         # get negative samples for the current pair
-        neg_samples = get_negative_samples(current_word_index, context_word_index, vocab_size, nsize)
+        neg_samples = get_negative_samples(
+            current_word_index, context_word_index, vocab_size, nsize)
 
         # Adding two positive examples and the corresponding negative samples to the current batch
         for i in range(samples_per_pair):
@@ -240,7 +250,8 @@ def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size):
             batch[0][1][inst_counter] = neg_samples[0][i][1]
 
             pred_sim = neg_samples[1][i]
-            if pred_sim != 0:  # if this is a positive example, replace 1 with the real similarity from the file
+            # if this is a positive example, replace 1 with the real similarity from the file:
+            if pred_sim != 0:
                 pred_sim = sim
             batch[1][inst_counter] = pred_sim
             inst_counter += 1
@@ -250,10 +261,11 @@ def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size):
             if timing:
                 print('Batch generation took', end - start, file=sys.stderr)
             inst_counter = 0
-            inputs_list = [np.zeros((samples_per_batch, 1), dtype=int), np.zeros((samples_per_batch, 1), dtype=int)]
+            inputs_list = [np.zeros((samples_per_batch, 1), dtype=int),
+                           np.zeros((samples_per_batch, 1), dtype=int)]
 
             batch = (inputs_list, np.zeros((samples_per_batch, 1)))
-            current_pos_samples = [[],[]]
+            current_pos_samples = [[], []]
             start = time.time()
 
     # return the remaining samples
@@ -263,12 +275,15 @@ def batch_generator_2(pairs, vocabulary, vocab_size, nsize, batch_size):
 def get_node_neighbors(word_idx):
     return neighbors_dict[word_idx]
 
+
 def get_current_positive_samples():
     return current_pos_samples
 
+
 def get_negative_samples(current_word_index, context_word_index, vocab_size, nsize):
     # Generate random negative samples, by default the same number as positive samples
-    neg_samples = skipgrams([current_word_index, context_word_index], vocab_size, window_size=1, negative_samples=nsize)
+    neg_samples = skipgrams([current_word_index, context_word_index], vocab_size, window_size=1,
+                            negative_samples=nsize)
     return neg_samples
 
 
@@ -284,7 +299,7 @@ def save_word2vec_format(fname, vocab, vectors, binary=False):
         vectors : numpy.array
             The vectors to be stored
         binary : bool
-            If True, the data wil be saved in binary word2vec format, else it will be saved in plain text.
+            If True, the data wil be saved in binary word2vec format, else in plain text.
         """
     if not (vocab or vectors):
         raise RuntimeError('no input')
@@ -319,7 +334,8 @@ class SimilarityCallback(Callback):
         for pair in pairs:
             valid_word0 = pair[0]
             valid_word1 = pair[1]
-            sim = self._get_sim_pair(self.model.ivocab.index(valid_word0), self.model.ivocab.index(valid_word1),
+            sim = self._get_sim_pair(self.model.ivocab.index(valid_word0),
+                                     self.model.ivocab.index(valid_word1),
                                      self.validation_model)
             log_str = 'Similarity between %s and %s: %f' % (valid_word0, valid_word1, sim)
             print(log_str)
@@ -345,8 +361,8 @@ class SimilarityCallback(Callback):
         """
         in_arr1 = np.zeros((1,))
         in_arr2 = np.zeros((1,))
-        in_arr1[0,] = valid_word_idx
-        in_arr2[0,] = valid_word_idx2
+        in_arr1[0, ] = valid_word_idx
+        in_arr2[0, ] = valid_word_idx2
         out = validation_model.predict_on_batch([in_arr1, in_arr2])
         return out
 
@@ -359,8 +375,8 @@ class SimilarityCallback(Callback):
         in_arr1 = np.zeros((1,))
         in_arr2 = np.zeros((1,))
         for i in range(vocab_size):
-            in_arr1[0,] = valid_word_idx
-            in_arr2[0,] = i
+            in_arr1[0, ] = valid_word_idx
+            in_arr2[0, ] = i
             out = validation_model.predict_on_batch([in_arr1, in_arr2])
             sim[i] = out
         return sim
