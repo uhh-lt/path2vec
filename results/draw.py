@@ -82,18 +82,22 @@ plt.plot((50, np.max(vectorsizes)), (graph_score, graph_score), 'red', label='Pu
 for batch in sorted(diff_bsizes):
     x = vectorsizes[batchsizes == batch]
     y = dhuman_scores[batchsizes == batch]
+    marker = 'o'
     if int(batch) == 166:
         label = 'Deepwalk'
+        marker = 'X'
     elif int(batch) == 366:
         label = 'node2vec'
+        marker = '*'
     elif int(batch) == 266:
         label = 'TransR'
+        marker = 'D'
     elif int(batch) == 265:
         label = 'TransD'
     else:
         #label = 'path2vec, batch ' + str(int(batch))
         label = 'path2vec'
-    plt.plot(x, y, linestyle='dashed', marker='o', label=label)
+    plt.plot(x, y, linestyle='dashed', marker=marker, label=label)
 plt.xlabel('Vector size')
 plt.ylabel('Spearman rank correlation on SimLex999')
 plt.legend(loc='best')
