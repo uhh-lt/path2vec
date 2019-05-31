@@ -203,7 +203,7 @@ if __name__ == "__main__":
         helpers.batch_generator(wordpairs, vocab_dict, vocab_size, negative, batch_size,
                                 args.use_neighbors, neighbors_count),
         callbacks=[sim_cb, loss_plot, earlystopping], steps_per_epoch=steps, epochs=args.epochs,
-        workers=cores, verbose=2)
+        workers=1, verbose=2)
 
     end = time.time()
     print('Training took:', int(end - start), 'seconds', file=sys.stderr)
