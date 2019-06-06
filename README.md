@@ -3,7 +3,7 @@ This repository contains code related to this paper:
 
 Andrey Kutuzov, Mohammad Dorgham, Oleksiy Oliynyk, Chris Biemann, Alexander Panchenko (2019)
 
-[Learning Graph Embeddings from WordNet-based Similarity Measures](https://arxiv.org/abs//1808.05611)
+[Learning Graph Embeddings from WordNet-based Similarity Measures](https://aclweb.org/anthology/papers/S/S19/S19-1014/)
 
 _Path2vec_ is a new approach for learning graph embeddings that relies on structural measures of pairwise node similarities. 
 The model learns representations for nodes in a dense space that approximate a given user-defined graph distance measure, such as e.g. the shortest path distance or distance measures that take information beyond the graph structure into account. 
