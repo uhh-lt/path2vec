@@ -37,22 +37,13 @@ def custom_loss(reg_1_output, reg_2_output, beta=0.01, gamma=0.01):
     return my_loss
 
 
-def build_connections(vocab_dict):
+def build_connections(vocab_dict, full_graph):
     global neighbors_dict
     neighbor_nodes = []
     for vocab, index in vocab_dict.items():
-        if vocab.count('.') < 2:
-            continue
-        synset = wn.synset(vocab)
-        hypernyms = synset.hypernyms()
-        hyponyms = synset.hyponyms()
-
-        for hypernym in hypernyms:
-            if vocab_dict[hypernym.name()]:
-                neighbor_nodes.append(vocab_dict[hypernym.name()])
-        for hyponym in hyponyms:
-            if vocab_dict[hyponym.name()]:
-                neighbor_nodes.append(vocab_dict[hyponym.name()])
+        neighbors = full_graph.neighbors(vocab)
+        for node in neighbors:
+            neighbor_nodes.append(vocab_dict[node])
 
         neighbors_dict[index] = neighbor_nodes
         neighbor_nodes = []
@@ -113,7 +104,7 @@ def build_vocabulary(pairs):
     return train_pairs, vocabulary, inv_vocab
 
 
-def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighbors, neighbors_count, full_graph):
+def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighbors, neighbors_count):
     """
     Generates training batches
     """
@@ -152,8 +143,8 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighb
             current_word_index = sent_seq[0]
             context_word_index = sent_seq[1]
             if use_neighbors and neighbors_count > 0:
-                w_neighbors = [vocabulary[word] for word in full_graph.neighbors(words[0])]
-                c_neighbors = [vocabulary[word] for word in full_graph.neighbors(words[1])]
+                w_neighbors = neighbors_dict[current_word_index]
+                c_neighbors = neighbors_dict[context_word_index]
                 w_nbrs = []
                 c_nbrs = []
             if use_neighbors:

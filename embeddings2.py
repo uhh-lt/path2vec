@@ -100,7 +100,7 @@ if __name__ == "__main__":
                 no_train_pairs += 1
         print('Number of pairs in the training set:', no_train_pairs)
 
-    #neighbors_dict = helpers.build_connections(vocab_dict)
+    
     full_graph = nx.Graph()
     reader = codecs.open(args.full_graph, 'r', encoding='utf-8')
     for line in reader:
@@ -113,7 +113,9 @@ if __name__ == "__main__":
                 
                 full_graph.add_edge(entity1, entity2)
     reader.close()
-
+    
+    neighbors_dict = helpers2.build_connections(vocab_dict, full_graph)
+    
     vocab_size = len(vocab_dict)
     valid_size = 4  # Number of random words to log their nearest neighbours after each epoch
     # valid_examples = np.random.choice(vocab_size, valid_size, replace=False)
@@ -210,7 +212,7 @@ if __name__ == "__main__":
     # Let's start training!
     start = time.time()
     history = keras_model.fit_generator(
-        helpers2.batch_generator(wordpairs, vocab_dict, vocab_size, negative, batch_size, args.use_neighbors, neighbors_count, full_graph),
+        helpers2.batch_generator(wordpairs, vocab_dict, vocab_size, negative, batch_size, args.use_neighbors, neighbors_count),
         callbacks=[loss_plot, earlystopping], steps_per_epoch=steps, epochs=args.epochs,
         workers=1, verbose=2)
 
