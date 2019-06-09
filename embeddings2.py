@@ -53,6 +53,7 @@ if __name__ == "__main__":
     parser.add_argument('--l1factor', type=float, default=1e-10, help='L1 regularizer coefficient')
     parser.add_argument('--beta', type=float, default=0.01, help='neighbors-based regularizer first coefficient')
     parser.add_argument('--gamma', type=float, default=0.01, help='neighbors-based regularizer second coefficient')
+    parser.add_argument('--train_size', type=int, help='Number of pairs in the training set (if absent, will be calculated on the fly)')
 
     args = parser.parse_args()
 
@@ -90,10 +91,13 @@ if __name__ == "__main__":
         vocabulary_file = args.vocab_file  # JSON file with the ready-made vocabulary
         print('Loading vocabulary from file', vocabulary_file, file=sys.stderr)
         vocab_dict, inverted_vocabulary = helpers2.vocab_from_file(vocabulary_file)
-        print('Counting the number of pairs in the training set...')
-        no_train_pairs = 0
-        for line in wordpairs:
-            no_train_pairs += 1
+        if args.train_size:
+            no_train_pairs = int(args.train_size)
+        else:
+            print('Counting the number of pairs in the training set...')
+            no_train_pairs = 0
+            for line in wordpairs:
+                no_train_pairs += 1
         print('Number of pairs in the training set:', no_train_pairs)
 
     #neighbors_dict = helpers.build_connections(vocab_dict)
