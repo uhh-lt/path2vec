@@ -20,7 +20,7 @@ import random as rn
 import argparse
 import time
 import networkx as nx
-import codecs
+from smart_open import smart_open
 
 # This script trains word embeddings on pairs of words and their similarities.
 # A possible source of such data is Wordnet and its shortest paths.
@@ -100,31 +100,30 @@ if __name__ == "__main__":
                 no_train_pairs += 1
         print('Number of pairs in the training set:', no_train_pairs)
 
-    
+
     full_graph = nx.Graph()
-    reader = codecs.open(args.full_graph, 'r', encoding='utf-8')
+    reader = smart_open(args.full_graph, 'r')
     for line in reader:
-        line = line.lstrip().rstrip()
+        line = line.strip()
         if line:
             elements = line.split('\t')
             if len(elements) ==2:
-                entity1 = elements[0].lower().lstrip().rstrip()
-                entity2 = elements[1].lower().lstrip().rstrip()
-                
+                entity1 = elements[0].lower().strip()
+                entity2 = elements[1].lower().strip()
                 full_graph.add_edge(entity1, entity2)
     reader.close()
-    
+
     neighbors_dict = helpers2.build_connections(vocab_dict, full_graph)
-    
+
     vocab_size = len(vocab_dict)
-    valid_size = 4  # Number of random words to log their nearest neighbours after each epoch
+    # valid_size = 4  # Number of random words to log their nearest neighbours after each epoch
     # valid_examples = np.random.choice(vocab_size, valid_size, replace=False)
 
     # But for now we will just use a couple of known pairs to log their similarities:
     # Gold similarities:
     # measure.n.02    fundamental_quantity.n.01        0.930846519882644
     # person.n.01     lover.n.03       0.22079177574204348
-    valid_examples = ['measure.n.02', 'fundamental_quantity.n.01', 'person.n.01', 'lover.n.03']
+    # valid_examples = ['measure.n.02', 'fundamental_quantity.n.01', 'person.n.01', 'lover.n.03']
 
     # For now, let's use Keras defaults for initialization:
     if args.regularize:
@@ -181,7 +180,7 @@ if __name__ == "__main__":
     keras_model = Model(inputs=inputs_list, outputs=[word_context_product])
 
     # Assigning attributes:
-    keras_model.vexamples = valid_examples
+    # keras_model.vexamples = valid_examples
     keras_model.ivocab = inverted_vocabulary
     keras_model.vsize = vocab_size
 
@@ -199,10 +198,10 @@ if __name__ == "__main__":
                  '_nn-' + str(args.use_neighbors) + str(args.neighbor_count) + '_reg-' + str(args.regularize)
 
     # create a secondary validation model to run our similarity checks during training
-    #similarity = ReLU()(dot([word_embedding, context_embedding], axes=1, normalize=True))
-    similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
-    validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
-    sim_cb = helpers2.SimilarityCallback(validation_model=validation_model)
+    # similarity = ReLU()(dot([word_embedding, context_embedding], axes=1, normalize=True))
+    # similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
+    # validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
+    # sim_cb = helpers2.SimilarityCallback(validation_model=validation_model)
 
     loss_plot = TensorBoard(log_dir=train_name + '_logs', write_graph=False)
     earlystopping = EarlyStopping(monitor='loss', min_delta=0.0001, patience=1, verbose=1, mode='auto')
