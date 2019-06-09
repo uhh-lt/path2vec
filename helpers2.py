@@ -41,6 +41,8 @@ def build_connections(vocab_dict, full_graph):
     global neighbors_dict
     neighbor_nodes = []
     for vocab, index in vocab_dict.items():
+        if vocab == 'UNK':
+            continue
         neighbors = full_graph.neighbors(vocab)
         for node in neighbors:
             neighbor_nodes.append(vocab_dict[node])
