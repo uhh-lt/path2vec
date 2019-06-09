@@ -107,9 +107,9 @@ if __name__ == "__main__":
         line = line.lstrip().rstrip()
         if line:
             elements = line.split('\t')
-            if len(elements) ==3:
+            if len(elements) ==2:
                 entity1 = elements[0].lower().lstrip().rstrip()
-                entity2 = elements[2].lower().lstrip().rstrip()
+                entity2 = elements[1].lower().lstrip().rstrip()
                 
                 full_graph.add_edge(entity1, entity2)
     reader.close()
