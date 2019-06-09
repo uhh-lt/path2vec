@@ -42,7 +42,8 @@ if __name__ == "__main__":
     # (can be painfully slow for large datasets)
     parser.add_argument('--fix_seeds', default=True, help='fix seeds to ensure repeatability')
     parser.add_argument('--use_neighbors', action="store_true",
-                        help='whether or not to use the neighbor nodes-based regularizer')
+                        help='whether or not to use the neighbor nodes-based regularizer '
+                             '(currently works for the WordNet graph only)')
     parser.add_argument('--neighbor_count', type=int, default=3,
                         help='number of adjacent nodes to consider for regularization')
     parser.add_argument('--negative_count', type=int, default=3, help='number of negative samples')
@@ -106,7 +107,7 @@ if __name__ == "__main__":
     valid_size = 4  # Number of random words to log their nearest neighbours after each epoch
     # valid_examples = np.random.choice(vocab_size, valid_size, replace=False)
 
-    # But for now we will just use a couple of known pairs to log their similarities:
+    # But for now we will just use a couple of known WordNet pairs to log their similarities:
     # Gold similarities:
     # measure.n.02    fundamental_quantity.n.01        0.930846519882644
     # person.n.01     lover.n.03       0.22079177574204348
@@ -186,6 +187,7 @@ if __name__ == "__main__":
                  + str(args.regularize)
 
     # create a secondary validation model to run our similarity checks during training
+    # (in case you work with non-WordNet graph, modify this accordingly!)
     similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
     validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
     sim_cb = helpers.SimilarityCallback(validation_model=validation_model)
@@ -203,7 +205,7 @@ if __name__ == "__main__":
         helpers.batch_generator(wordpairs, vocab_dict, vocab_size, negative, batch_size,
                                 args.use_neighbors, neighbors_count),
         callbacks=[sim_cb, loss_plot, earlystopping], steps_per_epoch=steps, epochs=args.epochs,
-        workers=cores, verbose=2)
+        workers=1, verbose=2)
 
     end = time.time()
     print('Training took:', int(end - start), 'seconds', file=sys.stderr)

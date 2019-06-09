@@ -3,7 +3,7 @@ This repository contains code related to this paper:
 
 Andrey Kutuzov, Mohammad Dorgham, Oleksiy Oliynyk, Chris Biemann, Alexander Panchenko (2019)
 
-[Learning Graph Embeddings from WordNet-based Similarity Measures](https://arxiv.org/abs//1808.05611)
+[Learning Graph Embeddings from WordNet-based Similarity Measures](https://aclweb.org/anthology/papers/S/S19/S19-1014/)
 
 _Path2vec_ is a new approach for learning graph embeddings that relies on structural measures of pairwise node similarities. 
 The model learns representations for nodes in a dense space that approximate a given user-defined graph distance measure, such as e.g. the shortest path distance or distance measures that take information beyond the graph structure into account. 
@@ -46,7 +46,7 @@ For example, to evaluate on the shortest path metrics (`shp`):
 
 `shp 0.9473  0.5121  0.5551`
 
-The resuting score 0.9473 is the Spearman rank correlation between model-produced similarities and WordNet similarities (using `SIMFILE0`). 
+The resulting score 0.9473 is the Spearman rank correlation between model-produced similarities and WordNet similarities (using `SIMFILE0`). 
 The second score 0.5121 is calculated on `SIMFILE1` (human judgments). 
 The 3rd score (0.5551 in the example) is always calculated on the original Simlex with dynamically selected synsets (see below for details).
 
