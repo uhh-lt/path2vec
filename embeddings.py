@@ -228,8 +228,8 @@ if __name__ == "__main__":
     history = keras_model.fit_generator(
         helpers.batch_generator(wordpairs, vocab_dict, vocab_size, negative, batch_size,
                                 args.use_neighbors, neighbors_count),
-        callbacks=[sim_cb, loss_plot, earlystopping], steps_per_epoch=steps, epochs=args.epochs,
-        workers=1, verbose=2)
+                                callbacks=[loss_plot, earlystopping], steps_per_epoch=steps, 
+                                epochs=args.epochs, workers=1, verbose=2)
 
     end = time.time()
     print('Training took:', int(end - start), 'seconds', file=sys.stderr)
