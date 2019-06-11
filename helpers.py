@@ -37,22 +37,28 @@ def custom_loss(reg_1_output, reg_2_output, beta=0.01, gamma=0.01):
     return my_loss
 
 
-def build_connections(vocab_dict):
+def build_neighbors_map(vocab_dict, full_graph=None):
     global neighbors_dict
     neighbor_nodes = []
     for vocab, index in vocab_dict.items():
-        if vocab.count('.') < 2:
+        if vocab == 'UNK':
             continue
-        synset = wn.synset(vocab)
-        hypernyms = synset.hypernyms()
-        hyponyms = synset.hyponyms()
-
-        for hypernym in hypernyms:
-            if vocab_dict[hypernym.name()]:
-                neighbor_nodes.append(vocab_dict[hypernym.name()])
-        for hyponym in hyponyms:
-            if vocab_dict[hyponym.name()]:
-                neighbor_nodes.append(vocab_dict[hyponym.name()])
+        if full_graph == None and vocab.count('.') < 2:
+            continue
+        if full_graph:
+            neighbors = full_graph.neighbors(vocab)
+            for node in neighbors:
+                neighbor_nodes.append(vocab_dict[node])
+        else:
+            synset = wn.synset(vocab)
+            hypernyms = synset.hypernyms()
+            hyponyms = synset.hyponyms()
+            for hypernym in hypernyms:
+                if vocab_dict[hypernym.name()]:
+                    neighbor_nodes.append(vocab_dict[hypernym.name()])
+            for hyponym in hyponyms:
+                if vocab_dict[hyponym.name()]:
+                    neighbor_nodes.append(vocab_dict[hyponym.name()])
 
         neighbors_dict[index] = neighbor_nodes
         neighbor_nodes = []

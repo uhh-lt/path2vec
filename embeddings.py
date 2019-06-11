@@ -17,6 +17,8 @@ import numpy as np
 import tensorflow as tf
 from keras import backend
 import random as rn
+import networkx as nx
+from smart_open import smart_open
 import argparse
 import time
 
@@ -57,6 +59,11 @@ if __name__ == "__main__":
                         help='neighbors-based regularizer first coefficient')
     parser.add_argument('--gamma', type=float, default=0.01,
                         help='neighbors-based regularizer second coefficient')
+    parser.add_argument('--full_graph', help='[optional] path to an edge list file of the complete graph, '
+                        'used for nearst neighbors regularization. If not present, wordnet graph is assummed.')
+    parser.add_argument('--train_size', type=int, 
+                        help='Number of pairs in the training set (if absent, will be calculated on the fly)')
+    
 
     args = parser.parse_args()
 
@@ -95,13 +102,30 @@ if __name__ == "__main__":
         vocabulary_file = args.vocab_file  # JSON file with the ready-made vocabulary
         print('Loading vocabulary from file', vocabulary_file, file=sys.stderr)
         vocab_dict, inverted_vocabulary = helpers.vocab_from_file(vocabulary_file)
-        print('Counting the number of pairs in the training set...')
-        no_train_pairs = 0
-        for line in wordpairs:
-            no_train_pairs += 1
+        if args.train_size:
+            no_train_pairs = int(args.train_size)
+        else:
+            print('Counting the number of pairs in the training set...')
+            no_train_pairs = 0
+            for line in wordpairs:
+                no_train_pairs += 1
         print('Number of pairs in the training set:', no_train_pairs)
 
-    neighbors_dict = helpers.build_connections(vocab_dict)
+    full_graph = None
+    if args.full_graph:
+        full_graph = nx.Graph()
+        reader = smart_open(args.full_graph, 'r')
+        for line in reader:
+            line = line.strip()
+            if line:
+                elements = line.split('\t')
+                if len(elements) ==2:
+                    entity1 = elements[0].lower().strip()
+                    entity2 = elements[1].lower().strip()
+                    full_graph.add_edge(entity1, entity2)
+        reader.close()
+    
+    helpers.build_neighbors_map(vocab_dict, full_graph)
 
     vocab_size = len(vocab_dict)
     valid_size = 4  # Number of random words to log their nearest neighbours after each epoch
