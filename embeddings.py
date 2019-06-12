@@ -1,26 +1,27 @@
 #!/usr/bin/python3
 # coding: utf-8
 
+import argparse
 import multiprocessing
-from keras import Input
-from keras.models import Model
-from keras.layers.merge import dot
-from keras.layers.embeddings import Embedding
-from keras.layers import Flatten
-from keras import optimizers
-from keras import regularizers
+import random as rn
 import sys
-from keras.callbacks import TensorBoard, EarlyStopping
-import helpers
-from tensorflow.python.client import device_lib
+import time
+
+import networkx as nx
 import numpy as np
 import tensorflow as tf
+from keras import Input
 from keras import backend
-import random as rn
-import networkx as nx
+from keras import optimizers
+from keras import regularizers
+from keras.callbacks import TensorBoard, EarlyStopping
+from keras.layers import Flatten
+from keras.layers.embeddings import Embedding
+from keras.layers.merge import dot
+from keras.models import Model
 from smart_open import smart_open
-import argparse
-import time
+
+import helpers
 
 # This script trains word embeddings on pairs of words and their similarities.
 # A possible source of such data is Wordnet and its shortest paths.
@@ -59,15 +60,14 @@ if __name__ == "__main__":
                         help='neighbors-based regularizer first coefficient')
     parser.add_argument('--gamma', type=float, default=0.01,
                         help='neighbors-based regularizer second coefficient')
-    parser.add_argument('--full_graph', help='[optional] path to an edge list file of the complete graph, '
-                        'used for nearst neighbors regularization. If not present, wordnet graph is assummed.')
-    parser.add_argument('--train_size', type=int, 
-                        help='Number of pairs in the training set (if absent, will be calculated on the fly)')
-    
+    parser.add_argument('--full_graph', help='[optional] Path to an edge list file of the source '
+                                             'graph, used for nearest neighbors regularization. '
+                                             'If not present, WordNet graph is assumed.')
+    parser.add_argument('--train_size', type=int,
+                        help='Number of pairs in the training set '
+                             '(if absent, will be calculated on the fly)')
 
     args = parser.parse_args()
-
-    print(device_lib.list_local_devices())
 
     trainfile = args.input_file  # Gzipped file with pairs and their similarities
     embedding_dimension = args.vsize  # vector size (for example, 20)
@@ -119,23 +119,23 @@ if __name__ == "__main__":
             line = line.strip()
             if line:
                 elements = line.split('\t')
-                if len(elements) ==2:
+                if len(elements) == 2:
                     entity1 = elements[0].lower().strip()
                     entity2 = elements[1].lower().strip()
                     full_graph.add_edge(entity1, entity2)
         reader.close()
-    
-    helpers.build_neighbors_map(vocab_dict, full_graph)
+
+    neighbors_dict = helpers.build_neighbors_map(vocab_dict, full_graph)
 
     vocab_size = len(vocab_dict)
-    valid_size = 4  # Number of random words to log their nearest neighbours after each epoch
+    # valid_size = 4  # Number of random words to log their nearest neighbours after each epoch
     # valid_examples = np.random.choice(vocab_size, valid_size, replace=False)
 
     # But for now we will just use a couple of known WordNet pairs to log their similarities:
     # Gold similarities:
     # measure.n.02    fundamental_quantity.n.01        0.930846519882644
     # person.n.01     lover.n.03       0.22079177574204348
-    valid_examples = ['measure.n.02', 'fundamental_quantity.n.01', 'person.n.01', 'lover.n.03']
+    # valid_examples = ['measure.n.02', 'fundamental_quantity.n.01', 'person.n.01', 'lover.n.03']
 
     if args.regularize:
         word_embedding_layer = Embedding(vocab_size, embedding_dimension, input_length=1,
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     keras_model = Model(inputs=inputs_list, outputs=[word_context_product])
 
     # Assigning attributes:
-    keras_model.vexamples = valid_examples
+    # keras_model.vexamples = valid_examples
     keras_model.ivocab = inverted_vocabulary
     keras_model.vsize = vocab_size
 
@@ -205,16 +205,16 @@ if __name__ == "__main__":
     print(keras_model.summary())
     print('Batch size:', batch_size)
 
-    train_name = trainfile.split('.')[0] + '_embeddings_vsize' + str(embedding_dimension) + \
-                 '_bsize' + str(batch_size) + '_lr' + str(learn_rate).split('.')[-1] + \
-                 '_nn-' + str(args.use_neighbors) + str(args.neighbor_count) + '_reg-' \
+    train_name = trainfile.split('.')[0] + '_embeddings_vsize' + str(embedding_dimension) \
+                 + '_bsize' + str(batch_size) + '_lr' + str(learn_rate).split('.')[-1] \
+                 + '_nn-' + str(args.use_neighbors) + str(args.neighbor_count) + '_reg-' \
                  + str(args.regularize)
 
     # create a secondary validation model to run our similarity checks during training
     # (in case you work with non-WordNet graph, modify this accordingly!)
-    similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
-    validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
-    sim_cb = helpers.SimilarityCallback(validation_model=validation_model)
+    # similarity = dot([word_embedding, context_embedding], axes=1, normalize=True)
+    # validation_model = Model(inputs=[word_index, context_index], outputs=[similarity])
+    # sim_cb = helpers.SimilarityCallback(validation_model=validation_model)
 
     loss_plot = TensorBoard(log_dir=train_name + '_logs', write_graph=False)
     earlystopping = EarlyStopping(monitor='loss', min_delta=0.0001, patience=1, verbose=1,
@@ -228,8 +228,8 @@ if __name__ == "__main__":
     history = keras_model.fit_generator(
         helpers.batch_generator(wordpairs, vocab_dict, vocab_size, negative, batch_size,
                                 args.use_neighbors, neighbors_count),
-                                callbacks=[loss_plot, earlystopping], steps_per_epoch=steps, 
-                                epochs=args.epochs, workers=1, verbose=2)
+        callbacks=[loss_plot, earlystopping], steps_per_epoch=steps,
+        epochs=args.epochs, workers=1, verbose=2)
 
     end = time.time()
     print('Training took:', int(end - start), 'seconds', file=sys.stderr)

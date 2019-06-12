@@ -14,6 +14,7 @@ import json
 import time
 from nltk.corpus import wordnet as wn
 import random
+from smart_open import smart_open
 
 neighbors_dict = dict()
 current_pos_samples = [[], []]
@@ -43,7 +44,7 @@ def build_neighbors_map(vocab_dict, full_graph=None):
     for vocab, index in vocab_dict.items():
         if vocab == 'UNK':
             continue
-        if full_graph == None and vocab.count('.') < 2:
+        if full_graph is None and vocab.count('.') < 2:
             continue
         if full_graph:
             neighbors = full_graph.neighbors(vocab)
@@ -88,8 +89,8 @@ def vocab_from_file(vocabfile):
     Outputs vocabulary and inverted vocabulary
     """
 
-    vfile = gzip.open(vocabfile, 'r').read()
-    inv_vocab = json.loads(vfile.decode('utf-8'))
+    with smart_open(vocabfile, 'r') as f:
+        inv_vocab = json.loads(f.read())
     vocabulary = {}
     for no, word in enumerate(inv_vocab):
         vocabulary[word] = no
@@ -165,7 +166,6 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighb
                 c_neighbors = neighbors_dict[context_word_index]
                 w_nbrs = []
                 c_nbrs = []
-            if use_neighbors:
                 for n in range(neighbors_count):
                     if w_neighbors and len(w_neighbors) > n:
                         w_nbrs.append(random.choice(w_neighbors))
@@ -184,7 +184,7 @@ def batch_generator(pairs, vocabulary, vocab_size, nsize, batch_size, use_neighb
             for i in range(samples_per_pair):
                 batch[0][0][inst_counter] = neg_samples[0][i][0]
                 batch[0][1][inst_counter] = neg_samples[0][i][1]
-                if use_neighbors:
+                if use_neighbors and neighbors_count > 0:
                     for n in range(neighbors_count):
                         batch[0][n + 2][inst_counter] = w_nbrs[n]
                     for n in range(neighbors_count):
@@ -335,7 +335,7 @@ class SimilarityCallback(Callback):
         super(SimilarityCallback, self).__init__()
         self.validation_model = validation_model
 
-    def on_epoch_end(self, epoch, logs={}):
+    def on_epoch_end(self, epoch, logs=None):
         pairs = combinations(self.model.vexamples, 2)
         for pair in pairs:
             valid_word0 = pair[0]
