@@ -61,3 +61,23 @@ For example, for the words `weekend` and `week` we choose the synsets `weekend.n
 To evaluate the model this way, use the `evaluate_lemmas.py` script:
 
 `python3 evaluate_lemmas.py MODELFILE simlex/simlex_original.tsv`
+
+# BibTex
+```
+@inproceedings{kutuzov-etal-2019-learning,
+    title = "Learning Graph Embeddings from {W}ord{N}et-based Similarity Measures",
+    author = "Kutuzov, Andrey  and
+      Dorgham, Mohammad  and
+      Oliynyk, Oleksiy  and
+      Biemann, Chris  and
+      Panchenko, Alexander",
+    booktitle = "Proceedings of the Eighth Joint Conference on Lexical and Computational Semantics (*{SEM} 2019)",
+    month = jun,
+    year = "2019",
+    address = "Minneapolis, Minnesota",
+    publisher = "Association for Computational Linguistics",
+    url = "https://www.aclweb.org/anthology/S19-1014",
+    pages = "125--135",
+    abstract = "We present path2vec, a new approach for learning graph embeddings that relies on structural measures of pairwise node similarities. The model learns representations for nodes in a dense space that approximate a given user-defined graph distance measure, such as e.g. the shortest path distance or distance measures that take information beyond the graph structure into account. Evaluation of the proposed model on semantic similarity and word sense disambiguation tasks, using various WordNet-based similarity measures, show that our approach yields competitive results, outperforming strong graph embedding baselines. The model is computationally efficient, being orders of magnitude faster than the direct computation of graph-based distances.",
+}
+```
