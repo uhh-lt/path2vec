@@ -64,20 +64,20 @@ To evaluate the model this way, use the `evaluate_lemmas.py` script:
 
 # BibTex
 ```
-@inproceedings{kutuzov-etal-2019-learning,
-    title = "Learning Graph Embeddings from {W}ord{N}et-based Similarity Measures",
+@inproceedings{kutuzov-etal-2019-making,
+    title = "Making Fast Graph-based Algorithms with Graph Metric Embeddings",
     author = "Kutuzov, Andrey  and
       Dorgham, Mohammad  and
       Oliynyk, Oleksiy  and
       Biemann, Chris  and
       Panchenko, Alexander",
-    booktitle = "Proceedings of the Eighth Joint Conference on Lexical and Computational Semantics (*{SEM} 2019)",
-    month = jun,
+    booktitle = "Proceedings of the 57th Conference of the Association for Computational Linguistics",
+    month = jul,
     year = "2019",
-    address = "Minneapolis, Minnesota",
+    address = "Florence, Italy",
     publisher = "Association for Computational Linguistics",
-    url = "https://www.aclweb.org/anthology/S19-1014",
-    pages = "125--135",
-    abstract = "We present path2vec, a new approach for learning graph embeddings that relies on structural measures of pairwise node similarities. The model learns representations for nodes in a dense space that approximate a given user-defined graph distance measure, such as e.g. the shortest path distance or distance measures that take information beyond the graph structure into account. Evaluation of the proposed model on semantic similarity and word sense disambiguation tasks, using various WordNet-based similarity measures, show that our approach yields competitive results, outperforming strong graph embedding baselines. The model is computationally efficient, being orders of magnitude faster than the direct computation of graph-based distances.",
+    url = "https://www.aclweb.org/anthology/P19-1325",
+    pages = "3349--3355",
+    abstract = "Graph measures, such as node distances, are inefficient to compute. We explore dense vector representations as an effective way to approximate the same information. We introduce a simple yet efficient and effective approach for learning graph embeddings. Instead of directly operating on the graph structure, our method takes structural measures of pairwise node similarities into account and learns dense node representations reflecting user-defined graph distance measures, such as e.g. the shortest path distance or distance measures that take information beyond the graph structure into account. We demonstrate a speed-up of several orders of magnitude when predicting word similarity by vector operations on our embeddings as opposed to directly computing the respective path-based measures, while outperforming various other graph embeddings on semantic similarity and word sense disambiguation tasks.",
 }
 ```
