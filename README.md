@@ -12,10 +12,10 @@ The model is computationally efficient, being orders of magnitude faster than th
 
 # Pre-trained models and datasets
 You can download pre-trained dense vector representations of WordNet synsets approximating several different graph distance metrics:
-- [Jiang-Conrath (SemCor)](https://ltnas1.informatik.uni-hamburg.de:8081/owncloud/index.php/s/lhcJQNxaGBLjL8o/download?path=%2Fembeddings&files=jcn-semcor_embeddings.vec.gz)
-- [Leacock-Chodorow](https://ltnas1.informatik.uni-hamburg.de:8081/owncloud/index.php/s/lhcJQNxaGBLjL8o/download?path=%2Fembeddings&files=lch_embeddings.vec.gz)
-- [Shortest path](https://ltnas1.informatik.uni-hamburg.de:8081/owncloud/index.php/s/lhcJQNxaGBLjL8o/download?path=%2Fembeddings&files=shp_embeddings.vec.gz)
-- [Wu-Palmer](https://ltnas1.informatik.uni-hamburg.de:8081/owncloud/index.php/s/lhcJQNxaGBLjL8o/download?path=%2Fembeddings&files=wup_embeddings.vec.gz)
+- [Jiang-Conrath (SemCor)](http://ltdata1.informatik.uni-hamburg.de/path2vec/embeddings/jcn-semcor_embeddings.vec.gz)
+- [Leacock-Chodorow](http://ltdata1.informatik.uni-hamburg.de/path2vec/embeddings/lch_embeddings.vec.gz)
+- [Shortest path](http://ltdata1.informatik.uni-hamburg.de/path2vec/embeddings/shp_embeddings.vec.gz)
+- [Wu-Palmer](http://ltdata1.informatik.uni-hamburg.de/path2vec/embeddings/wup_embeddings.vec.gz)
 
 Prepared training datasets are also available:
 - [datasets](https://ltnas1.informatik.uni-hamburg.de:8081/owncloud/index.php/s/lhcJQNxaGBLjL8o?path=%2Fdatasets)
